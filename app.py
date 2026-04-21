@@ -54,47 +54,34 @@ with tabs[0]:
     st.subheader("3. 시스템 운영 체계")
     st.write("질문 분석부터 근거 추출 및 불확실성 검토까지 이어지는 8단계 공정을 거쳐 답변을 생성합니다.")
 
-# 2. 인공지능 분석
+# 2. 인공지능 분석 탭
 with tabs[1]:
     st.header("인공지능 규제 분석")
     user_query = st.chat_input("분석이 필요한 건축 규제에 대해 입력해 주세요")
     
     if user_query:
-        # 8단계 분석 시뮬레이션
         with st.status("단계별 규제 분석 진행 중", expanded=True) as status:
-            st.write("쟁점 파악 및 대상 지역 식별 진행")
-            time.sleep(0.5)
-            st.write("상위 법령 및 지자체 조례 조문 대조")
-            time.sleep(0.5)
-            st.write("근거 조문 추출 및 답변 초안 구성")
+            st.write("쟁점 파악 및 데이터 검색 중")
             time.sleep(0.5)
             status.update(label="분석 완료", state="complete", expanded=False)
 
         st.markdown('<div class="report-card">', unsafe_allow_html=True)
         st.subheader("건축 규제 검토 보고서")
         
-        # 1. 데이터베이스 먼저 조회
+        # 데이터베이스 조회
         db_info = get_ordinance_data(user_query)
         
         if db_info:
-            st.write("1. 판단 결론")
-            st.info(db_info['conclusion'])
-            c1, c2 = st.columns(2)
-            with c1:
-                st.write("2. 적용 지역")
-                st.write(db_info['region'])
-                st.write("3. 핵심 근거 조문")
-                st.write(db_info['law'])
-            with c2:
-                st.write("4. 해석 설명")
-                st.write(db_info['detail'])
-                st.write("6. 후속 절차")
-                st.write(db_info['next'])
-            st.write("5. 추가 확인 사항")
-            st.warning(db_info['check'])
+            # 데이터베이스에 있는 경우 6개 항목 출력
+            st.info(f"1. 판단 결론: {db_info['conclusion']}")
+            st.write(f"2. 적용 지역: {db_info['region']}")
+            st.write(f"3. 핵심 근거 조문: {db_info['law']}")
+            st.write(f"4. 해석 설명: {db_info['detail']}")
+            st.warning(f"5. 추가 확인 사항: {db_info['check']}")
+            st.write(f"6. 후속 절차: {db_info['next']}")
         else:
-            # 2. 데이터베이스에 없으면 인공지능이 직접 답변
-            with st.spinner("데이터베이스 외 정보를 분석 중입니다"):
+            # 데이터베이스에 없으면 AI 기본 지식으로 답변 (st.write로 출력 보장)
+            with st.spinner("AI가 학습된 건축 지식을 바탕으로 답변을 구성하고 있습니다"):
                 ai_answer = get_gemini_response(user_query)
                 st.write(ai_answer)
                 
