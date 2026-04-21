@@ -3,6 +3,8 @@ import time
 from engine import get_gemini_response
 from database import get_ordinance_data
 
+# app.py 맨 윗부분에 추가
+st.write("시스템 상태: 최신 엔진(v1) 적용 시도 중")
 # 페이지 설정
 st.set_page_config(page_title="용인시 건축 조례 지원 플랫폼", layout="wide")
 
@@ -98,4 +100,4 @@ with tabs[3]:
 st.divider()
 st.caption("본 서비스는 행정기관의 최종 유권해석을 대체하지 않습니다.")
 
-st.caption("최종 업데이트 시간: 4월 21일 오후 7시 50분")
+st.caption("최종 업데이트 시간: 4월 21일 오후 7시 51분")
