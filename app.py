@@ -91,7 +91,7 @@ with tabs[1]:
 
 # 3. 및 4. 탭
 with tabs[2]:
-    st.header("건축선 및 일조권 시각화")
+    st.header("건축선 시각화")
     st.write("준비 중인 기능입니다.")
 with tabs[3]:
     st.header("행정 민원 지원")
