@@ -21,10 +21,10 @@ apply_custom_style(st.session_state.dark_mode)
 # 4. 사이드바 구성
 with st.sidebar:
     st.title("⚙️ 플랫폼 제어")
-    st.session_state.dark_mode = st.toggle("🌙 다크 모드 켜기", value=st.session_state.dark_mode)
+    st.session_state.dark_mode = st.toggle("🌙 다크 모드", value=st.session_state.dark_mode)
     
     st.divider()
-    st.subheader("📁 대화 이력 (클릭 시 열람)")
+    st.subheader("📁 대화 이력")
     
     # --- 화면 좌측에 기록을 버튼으로 띄워주는 핵심 로직 ---
     if st.session_state.chat_history:
