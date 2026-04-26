@@ -91,59 +91,57 @@ with tabs[0]:
 with tabs[1]:
     st.write("") 
 
-    # [수정] 사이드바에서 기록을 클릭해서 "열람 모드"일 때의 화면 구성
-    if st.session_state.selected_index is not None:
-        idx = st.session_state.selected_index
-        selected_chat = st.session_state.chat_history[idx]
-        
-        st.info(f"📅 과거 분석 기록 열람 중 (조회 일시: {selected_chat.get('time', '')})")
-        render_user_message(selected_chat["query"])
-        render_ai_report(selected_chat["response"])
-        
-        if st.button("닫기 및 새 질문하기"):
-            st.session_state.selected_index = None
-            st.rerun()
+    # [중요] 기존 대화 내용을 먼저 화면에 뿌려줍니다.
+    for chat in st.session_state.chat_history:
+        render_user_message(chat["query"])
+        render_ai_report(chat["response"])
 
-    # 열람 모드가 아닐 때 (기본 채팅 화면)
-    else:
-        # 기존 대화 내용을 먼저 화면에 뿌려줍니다.
-        for chat in st.session_state.chat_history:
-            render_user_message(chat["query"])
-            render_ai_report(chat["response"])
-
-        # 사용자 입력창
-        user_query = st.chat_input("분석이 필요한 건축 규제를 입력해 주세요")
+    # 사용자 입력창
+    user_query = st.chat_input("분석이 필요한 건축 규제를 입력해 주세요")
+    
+    if user_query:
+        # 1. 화면에 사용자 질문 즉시 표시
+        render_user_message(user_query)
         
-        if user_query:
-            # 1. 화면에 사용자 질문 즉시 표시
-            render_user_message(user_query)
+        # 2. 로딩 상태 표시 및 데이터 처리
+        with st.status("분석 진행 중...", expanded=True) as status:
+            st.write("🔍 데이터베이스 탐색 중...")
+            # database.py에서 법령 텍스트 문자열을 가져옴
+            db_context = get_ordinance_data(user_query)
             
-            # 2. 로딩 상태 표시 및 데이터 처리
-            with st.status("분석 진행 중...", expanded=True) as status:
-                st.write("🔍 데이터베이스 탐색 중...")
-                db_context = get_ordinance_data(user_query)
+            st.write("🤖 AI 엔진 보고서 작성 중...")
+            
+            # [핵심 수정] DB 검색 결과가 있으면 질문과 합쳐서 엔진에 1개의 텍스트로 전달
+            if db_context:
+                combined_prompt = f"""
+                다음 [참고 법령]을 바탕으로 사용자의 [질문]에 대한 건축 규제 검토 보고서를 작성해 주세요.
                 
-                st.write("🤖 AI 엔진 보고서 작성 중...")
-                response_text = get_gemini_response(user_query, db_context)
+                [참고 법령]
+                {db_context}
                 
-                status.update(label="✅ 분석 완료", state="complete")
-
-            # 3. 화면에 AI 답변 즉시 표시
-            render_ai_report(response_text)
-
-            # 4. 세션 히스토리에 저장
-            st.session_state.chat_history.append({
-                "query": user_query,
-                "response": response_text,
-                "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            })
+                [질문]
+                {user_query}
+                """
+                response_text = get_gemini_response(combined_prompt)
+            else:
+                # DB에 결과가 없을 경우 일반 질문만 전달
+                response_text = get_gemini_response(user_query)
             
-            # [추가] 기록이 생길 때마다 storage.py를 통해 파일에 즉시 영구 보존
-            save_history(st.session_state.chat_history)
-            
-            # 새로고침하여 입력창 비우기
-            st.rerun()
+            status.update(label="✅ 분석 완료", state="complete")
 
+        # 3. 화면에 AI 답변 즉시 표시
+        render_ai_report(response_text)
+
+        # 4. 세션 히스토리에 저장 (이후 새로고침 시에도 유지됨)
+        st.session_state.chat_history.append({
+            "query": user_query,
+            "response": response_text,
+            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        })
+        
+        # 새로고침하여 입력창 비우기
+        st.rerun()
+        
 # --- 탭 3, 4 ---
 with tabs[2]: st.warning("🚧 건축선 시각화 기능 준비 중")
 with tabs[3]: st.warning("🚧 행정 민원 지원 기능 준비 중")
