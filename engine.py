@@ -39,7 +39,7 @@ def get_gemini_response(user_query):
             }]
         }
         
-        response = requests.post(url, headers=headers, data=json.dumps(payload), timeout=20)
+        response = requests.post(url, headers=headers, data=json.dumps(payload), timeout=100)
         result = response.json()
         
         if response.status_code == 200:
