@@ -3,15 +3,15 @@ import time
 from datetime import datetime
 
 # ==========================================
-# 임시 가짜(Mock) 함수 (실제 연결 시 삭제)
+# 임시 가짜(Mock) 함수
 # ==========================================
 def get_ordinance_data(query):
     if "조례" in query:
         return {
             "conclusion": "조건부 허가 대상",
             "region": "경기도 용인시",
-            "law": "용인시 건축 조례 제15조",
-            "detail": f"입력하신 [{query}]와 관련하여, 용인시 조례에 따라 대지 안의 공지 기준을 충족해야 합니다.",
+            "law": "용인시 건축 조례 제1조 제1항 제2호 다목 및 건축법 제15조",
+            "detail": f"입력하신 [{query}]와 관련하여, 용인시 조례 및 상위 법령에 따라 대지 안의 공지 기준을 충족해야 합니다.",
             "check": "해당 필지의 지구단위계획 포함 여부",
             "next": "관할 구청 건축과 사전 협의"
         }
@@ -24,7 +24,7 @@ def get_gemini_response(query):
 # 페이지 설정
 st.set_page_config(page_title="용인시 건축 조례 지원 플랫폼", layout="wide")
 
-# --- 1. 상태 변수 초기화 (다크 모드 추가) ---
+# --- 1. 상태 변수 초기화 ---
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 if "selected_index" not in st.session_state:
@@ -66,56 +66,64 @@ with st.sidebar:
         st.session_state.selected_index = None
         st.rerun()
 
-# --- 3. 다크/라이트 모드에 따른 동적 CSS 적용 ---
+# --- 3. 다크/라이트 모드에 따른 동적 CSS 완벽 적용 ---
 if st.session_state.dark_mode:
-    # 다크 모드 색상 테마
     bg_main = "#0e1117"
+    bg_sidebar = "#262730" # 다크 모드용 사이드바 배경색
     text_main = "#fafafa"
     card_bg = "#1e1e1e"
     card_border = "#333333"
-    user_msg_bg = "#1e3a8a" # 짙은 파란색
+    user_msg_bg = "#1e3a8a" 
     user_msg_text = "#ffffff"
     tab_color = "#aaaaaa"
 else:
-    # 라이트 모드 색상 테마 (기존)
-    bg_main = "#f8f9fa"
+    bg_main = "#ffffff"
+    bg_sidebar = "#f4f6f9" # 라이트 모드용 사이드바 배경색
     text_main = "#222222"
     card_bg = "#ffffff"
     card_border = "#eaeaea"
-    user_msg_bg = "#e1f5fe" # 밝은 파란색
+    user_msg_bg = "#e1f5fe" 
     user_msg_text = "#000000"
     tab_color = "#555555"
 
 st.markdown(f"""
     <style>
-    /* 전체 배경 덮어쓰기 (Streamlit 기본 컨테이너) */
+    /* 메인 화면 전체 배경 및 글자색 */
     .stApp {{ background-color: {bg_main}; color: {text_main}; }}
-    
-    /* 폰트 및 텍스트 기본 설정 */
     html, body, [class*="css"] {{ font-size: 16px !important; line-height: 1.7 !important; color: {text_main}; }}
+    
+    /* 🔥 사이드바 배경 및 내부 요소 글자색 강제 적용 (핵심 수정 부분) */
+    [data-testid="stSidebar"] {{
+        background-color: {bg_sidebar} !important;
+    }}
+    [data-testid="stSidebar"] p, 
+    [data-testid="stSidebar"] span, 
+    [data-testid="stSidebar"] h1, 
+    [data-testid="stSidebar"] h2, 
+    [data-testid="stSidebar"] h3, 
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] div[data-testid="stMarkdownContainer"] {{
+        color: {text_main} !important;
+    }}
     
     /* 상단 탭 디자인 */
     .stTabs [data-baseweb="tab-list"] {{ gap: 15px; border-bottom: 2px solid {card_border}; }}
     .stTabs [data-baseweb="tab"] {{ height: 60px; font-size: 18px !important; font-weight: 600; color: {tab_color}; }}
     .stTabs [aria-selected="true"] {{ color: #1E88E5 !important; }}
     
-    /* 결과 보고서 카드 디자인 */
+    /* 결과 보고서 및 메시지 카드 디자인 */
     .report-card {{ 
         padding: 30px; border-radius: 12px; background-color: {card_bg}; 
         border: 1px solid {card_border}; color: {text_main};
         box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-top: 10px; margin-bottom: 20px; 
     }}
-    
-    /* 사용자 질문 박스 디자인 */
     .user-msg {{ 
         background-color: {user_msg_bg}; color: {user_msg_text};
         padding: 15px; border-radius: 8px; border-left: 5px solid #0288d1; margin-bottom: 10px; font-weight: bold;
     }}
     
-    /* 버튼 텍스트 정렬 */
+    /* 기타 UI 정렬 */
     .stButton>button {{ text-align: left !important; }}
-    
-    /* Streamlit 기본 텍스트 요소 색상 강제 적용 */
     p, h1, h2, h3, h4, h5, h6, li {{ color: {text_main} !important; }}
     </style>
     """, unsafe_allow_html=True)
