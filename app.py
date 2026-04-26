@@ -3,10 +3,13 @@ import time
 from engine import get_gemini_response
 from database import get_ordinance_data
 
-# app.py 맨 윗부분에 추가
-st.write("시스템 상태: 최신 엔진(v1) 적용 시도 중")
 # 페이지 설정
 st.set_page_config(page_title="용인시 건축 조례 지원 플랫폼", layout="wide")
+
+# --- 1. 기록 저장(Session State) 초기화 ---
+# 대화 이력을 저장할 리스트를 생성합니다.
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
 
 # 디자인 서식
 st.markdown("""
@@ -14,7 +17,8 @@ st.markdown("""
     .main { background-color: #fcfcfc; }
     .stTabs [data-baseweb="tab-list"] { gap: 20px; }
     .stTabs [data-baseweb="tab"] { height: 50px; white-space: pre-wrap; font-size: 16px; }
-    .report-card { padding: 25px; border-radius: 8px; background-color: #ffffff; border: 1px solid #eeeeee; line-height: 1.6; }
+    .report-card { padding: 25px; border-radius: 8px; background-color: #ffffff; border: 1px solid #eeeeee; line-height: 1.6; margin-bottom: 20px; }
+    .user-msg { background-color: #f0f2f6; padding: 10px; border-radius: 5px; margin-bottom: 5px; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -24,70 +28,92 @@ with st.sidebar:
     st.success("시스템 정상 작동")
     st.divider()
     st.subheader("시스템 메뉴")
-    st.button("화면 모드 전환")
-    st.button("플랫폼 가동 현황")
-    st.button("데이터 관리 화면")
+    if st.button("대화 기록 초기화"):
+        st.session_state.chat_history = []
+        st.rerun()
+    
     st.divider()
-    st.subheader("대화 이력")
-    st.caption("건축선 후퇴 거리 문의")
-    st.caption("용인시 일조권 이격 거리")
+    st.subheader("실시간 대화 이력")
+    # --- 2. 사이드바에 저장된 기록 표시 ---
+    if st.session_state.chat_history:
+        for i, chat in enumerate(reversed(st.session_state.chat_history)):
+            # 질문의 앞부분만 잘라서 요약 형식으로 표시
+            st.caption(f"{i+1}. {chat['query'][:15]}...")
+    else:
+        st.caption("이전 대화가 없습니다.")
+    
     st.divider()
     st.button("사용자 접속 및 등록")
 
 # 상단 제목
 st.title("건축 조례 및 법령 해석 지원 플랫폼")
 
-# 상단 메뉴 4개 유지
 tab_list = ["1. 프로젝트 개요", "2. 인공지능 분석", "3. 건축 시뮬레이션", "4. 민원 양식 생성"]
 tabs = st.tabs(tab_list)
 
-# 1. 프로젝트 개요 (기존 텍스트 유지)
+# 1. 프로젝트 개요
 with tabs[0]:
     st.header("프로젝트 개요")
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("1. 프로젝트 목적")
-        st.write("건축 실무 현장에서 반복되는 법령 및 조례 해석의 비효율성을 개선하고자 합니다.")
-        st.write("조례를 잘못 해석하여 발생하는 행정 불이익과 경제적 손실을 방지하는 것을 핵심 목표로 합니다.")
+        st.write("건축 실무 현장의 효율성 개선 및 행정 불이익 방지")
     with col2:
         st.subheader("2. 프로젝트 범위")
-        st.write("지역 범위 : 경기도 용인시를 1차적 대상으로 합니다.")
-        st.write("데이터 범위 : 용인시 조례와 경기도 조례, 그 상위 법령 13개와 차용법규 125개 규정을 통합합니다.")
-    st.subheader("3. 시스템 운영 체계")
-    st.write("질문 분석부터 근거 추출 및 불확실성 검토까지 이어지는 8단계 공정을 거쳐 답변을 생성합니다.")
+        st.write("경기도 용인시 조례 및 상위 법령 통합 분석")
 
 # 2. 인공지능 분석 탭
 with tabs[1]:
     st.header("인공지능 규제 분석")
+    
+    # --- 3. 과거 기록 먼저 출력 ---
+    for chat in st.session_state.chat_history:
+        with st.container():
+            st.markdown(f'<div class="user-msg">질문: {chat["query"]}</div>', unsafe_allow_html=True)
+            st.markdown('<div class="report-card">', unsafe_allow_html=True)
+            st.write(chat["response"])
+            st.markdown('</div>', unsafe_allow_html=True)
+
+    # 새로운 질문 입력
     user_query = st.chat_input("분석이 필요한 건축 규제에 대해 입력해 주세요")
     
     if user_query:
-        with st.status("단계별 규제 분석 진행 중", expanded=True) as status:
+        # 화면에 즉시 사용자 질문 표시
+        st.markdown(f'<div class="user-msg">질문: {user_query}</div>', unsafe_allow_html=True)
+        
+        with st.status("단계별 규제 분석 진행 중...", expanded=True) as status:
             st.write("쟁점 파악 및 데이터 검색 중")
             time.sleep(0.5)
+            
+            # 데이터 및 AI 답변 생성
+            db_info = get_ordinance_data(user_query)
+            if db_info:
+                full_response = f"""
+                **1. 판단 결론:** {db_info['conclusion']}  
+                **2. 적용 지역:** {db_info['region']}  
+                **3. 핵심 근거 조문:** {db_info['law']}  
+                **4. 해석 설명:** {db_info['detail']}  
+                **5. 추가 확인 사항:** {db_info['check']}  
+                **6. 후속 절차:** {db_info['next']}
+                """
+            else:
+                full_response = get_gemini_response(user_query)
+            
             status.update(label="분석 완료", state="complete", expanded=False)
 
+        # 결과 출력
         st.markdown('<div class="report-card">', unsafe_allow_html=True)
-        st.subheader("건축 규제 검토 보고서")
-        
-        # 데이터베이스 조회
-        db_info = get_ordinance_data(user_query)
-        
-        if db_info:
-            # 데이터베이스에 있는 경우 6개 항목 출력
-            st.info(f"1. 판단 결론: {db_info['conclusion']}")
-            st.write(f"2. 적용 지역: {db_info['region']}")
-            st.write(f"3. 핵심 근거 조문: {db_info['law']}")
-            st.write(f"4. 해석 설명: {db_info['detail']}")
-            st.warning(f"5. 추가 확인 사항: {db_info['check']}")
-            st.write(f"6. 후속 절차: {db_info['next']}")
-        else:
-            # 데이터베이스에 없으면 AI 기본 지식으로 답변 (st.write로 출력 보장)
-            with st.spinner("AI가 학습된 건축 지식을 바탕으로 답변을 구성하고 있습니다"):
-                ai_answer = get_gemini_response(user_query)
-                st.write(ai_answer)
-                
+        st.write(full_response)
         st.markdown('</div>', unsafe_allow_html=True)
+
+        # --- 4. 새로운 대화 내용을 기록에 추가 ---
+        st.session_state.chat_history.append({
+            "query": user_query,
+            "response": full_response
+        })
+        
+        # 사이드바 갱신을 위해 리런
+        st.rerun()
 
 # 3. 및 4. 탭
 with tabs[2]:
@@ -99,5 +125,3 @@ with tabs[3]:
 
 st.divider()
 st.caption("본 서비스는 행정기관의 최종 유권해석을 대체하지 않습니다.")
-
-st.caption("최종 업데이트 시간: 4월 21일 오후 8시 13분")
