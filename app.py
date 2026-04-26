@@ -10,8 +10,9 @@ def get_ordinance_data(query):
         return {
             "conclusion": "조건부 허가 대상",
             "region": "경기도 용인시",
+            # 과거 누락되었던 건축법 제15조 교차 검증 반영
             "law": "용인시 건축 조례 제1조 제1항 제2호 다목 및 건축법 제15조",
-            "detail": f"입력하신 [{query}]와 관련하여, 용인시 조례 및 상위 법령에 따라 대지 안의 공지 기준을 충족해야 합니다.",
+            "detail": f"입력하신 [{query}]와 관련하여, 용인시 조례 및 상위 법령에 따라 기준을 충족해야 합니다.",
             "check": "해당 필지의 지구단위계획 포함 여부",
             "next": "관할 구청 건축과 사전 협의"
         }
@@ -69,22 +70,26 @@ with st.sidebar:
 # --- 3. 다크/라이트 모드에 따른 동적 CSS 완벽 적용 ---
 if st.session_state.dark_mode:
     bg_main = "#0e1117"
-    bg_sidebar = "#262730" # 다크 모드용 사이드바 배경색
+    bg_sidebar = "#262730" 
     text_main = "#fafafa"
     card_bg = "#1e1e1e"
     card_border = "#333333"
     user_msg_bg = "#1e3a8a" 
     user_msg_text = "#ffffff"
     tab_color = "#aaaaaa"
+    btn_bg = "#333333"      # 다크 모드 일반 버튼 배경
+    btn_border = "#555555"  # 다크 모드 일반 버튼 테두리
 else:
     bg_main = "#ffffff"
-    bg_sidebar = "#f4f6f9" # 라이트 모드용 사이드바 배경색
+    bg_sidebar = "#f4f6f9" 
     text_main = "#222222"
     card_bg = "#ffffff"
     card_border = "#eaeaea"
     user_msg_bg = "#e1f5fe" 
     user_msg_text = "#000000"
     tab_color = "#555555"
+    btn_bg = "#ffffff"      # 라이트 모드 일반 버튼 배경
+    btn_border = "#cccccc"  # 라이트 모드 일반 버튼 테두리
 
 st.markdown(f"""
     <style>
@@ -92,10 +97,13 @@ st.markdown(f"""
     .stApp {{ background-color: {bg_main}; color: {text_main}; }}
     html, body, [class*="css"] {{ font-size: 16px !important; line-height: 1.7 !important; color: {text_main}; }}
     
-    /* 🔥 사이드바 배경 및 내부 요소 글자색 강제 적용 (핵심 수정 부분) */
-    [data-testid="stSidebar"] {{
-        background-color: {bg_sidebar} !important;
+    /* 🔥 화면 최상단 헤더(하얀 띠) 색상 동기화 및 투명화 */
+    [data-testid="stHeader"] {{
+        background-color: {bg_main} !important;
     }}
+    
+    /* 사이드바 배경 및 내부 요소 글자색 강제 적용 */
+    [data-testid="stSidebar"] {{ background-color: {bg_sidebar} !important; }}
     [data-testid="stSidebar"] p, 
     [data-testid="stSidebar"] span, 
     [data-testid="stSidebar"] h1, 
@@ -104,6 +112,17 @@ st.markdown(f"""
     [data-testid="stSidebar"] label,
     [data-testid="stSidebar"] div[data-testid="stMarkdownContainer"] {{
         color: {text_main} !important;
+    }}
+    
+    /* 🔥 일반(Secondary) 버튼 다크 모드 색상 동기화 ('전체 기록 삭제' 등) */
+    button[kind="secondary"] {{
+        background-color: {btn_bg} !important;
+        color: {text_main} !important;
+        border: 1px solid {btn_border} !important;
+    }}
+    button[kind="secondary"]:hover {{
+        border-color: #1E88E5 !important;
+        color: #1E88E5 !important;
     }}
     
     /* 상단 탭 디자인 */
