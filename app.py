@@ -21,58 +21,25 @@ def get_gemini_response(query):
     return f"AI 분석 엔진 응답: 입력하신 [{query}]에 대한 일반적인 건축 법령 가이드입니다. 구체적인 사항은 용인시 자치법규 시스템을 교차 검증해야 합니다."
 # ==========================================
 
-
-st.write("시스템 상태: 🟢 최신 엔진(v1) 가동 중")
-
-# 페이지 설정 (넓은 화면 유지)
+# 페이지 설정
 st.set_page_config(page_title="용인시 건축 조례 지원 플랫폼", layout="wide")
 
-# 상태 변수 초기화
+# --- 1. 상태 변수 초기화 (다크 모드 추가) ---
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 if "selected_index" not in st.session_state:
     st.session_state.selected_index = None
+if "dark_mode" not in st.session_state:
+    st.session_state.dark_mode = False
 
-# --- 가독성 개선을 위한 커스텀 CSS ---
-st.markdown("""
-    <style>
-    /* 전체 배경 및 기본 폰트 설정 */
-    .main { background-color: #f8f9fa; }
-    html, body, [class*="css"] {
-        font-size: 16px !important;
-        line-height: 1.7 !important;
-    }
-    
-    /* 상단 탭 디자인 개선 (크게, 명확하게) */
-    .stTabs [data-baseweb="tab-list"] { gap: 15px; border-bottom: 2px solid #e0e0e0; }
-    .stTabs [data-baseweb="tab"] { 
-        height: 60px; 
-        font-size: 18px !important; 
-        font-weight: 600; 
-        color: #555555;
-    }
-    .stTabs [aria-selected="true"] { color: #1E88E5 !important; }
-    
-    /* 결과 보고서 카드 디자인 (가독성 및 입체감) */
-    .report-card { 
-        padding: 30px; 
-        border-radius: 12px; 
-        background-color: #ffffff; 
-        border: 1px solid #eaeaea; 
-        box-shadow: 0 4px 10px rgba(0,0,0,0.03); 
-        margin-top: 10px; 
-        margin-bottom: 20px; 
-        font-size: 16px;
-    }
-    
-    /* 사이드바 버튼 텍스트 정렬 */
-    .stButton>button { text-align: left !important; }
-    </style>
-    """, unsafe_allow_html=True)
-
-# --- 좌측 사이드바 ---
+# --- 2. 좌측 사이드바 및 다크 모드 토글 ---
 with st.sidebar:
     st.title("⚙️ 플랫폼 제어")
+    
+    # 다크 모드 스위치
+    st.session_state.dark_mode = st.toggle("🌙 다크 모드 켜기", value=st.session_state.dark_mode)
+    
+    st.divider()
     
     if st.button("➕ 새 분석 시작", use_container_width=True, type="primary"):
         st.session_state.selected_index = None
@@ -81,11 +48,9 @@ with st.sidebar:
     st.divider()
     st.subheader("📁 대화 이력 (클릭 시 열람)")
     
-    # 기록 목록 (가독성을 위해 날짜와 요약 텍스트 분리)
     if st.session_state.chat_history:
         for i, chat in enumerate(reversed(st.session_state.chat_history)):
             actual_index = len(st.session_state.chat_history) - 1 - i
-            # 시간 형식: 14:30
             time_str = chat['time'][11:16]
             btn_text = f"🕒 {time_str} | {chat['query'][:12]}..."
             
@@ -101,17 +66,72 @@ with st.sidebar:
         st.session_state.selected_index = None
         st.rerun()
 
-# --- 메인 화면 ---
+# --- 3. 다크/라이트 모드에 따른 동적 CSS 적용 ---
+if st.session_state.dark_mode:
+    # 다크 모드 색상 테마
+    bg_main = "#0e1117"
+    text_main = "#fafafa"
+    card_bg = "#1e1e1e"
+    card_border = "#333333"
+    user_msg_bg = "#1e3a8a" # 짙은 파란색
+    user_msg_text = "#ffffff"
+    tab_color = "#aaaaaa"
+else:
+    # 라이트 모드 색상 테마 (기존)
+    bg_main = "#f8f9fa"
+    text_main = "#222222"
+    card_bg = "#ffffff"
+    card_border = "#eaeaea"
+    user_msg_bg = "#e1f5fe" # 밝은 파란색
+    user_msg_text = "#000000"
+    tab_color = "#555555"
+
+st.markdown(f"""
+    <style>
+    /* 전체 배경 덮어쓰기 (Streamlit 기본 컨테이너) */
+    .stApp {{ background-color: {bg_main}; color: {text_main}; }}
+    
+    /* 폰트 및 텍스트 기본 설정 */
+    html, body, [class*="css"] {{ font-size: 16px !important; line-height: 1.7 !important; color: {text_main}; }}
+    
+    /* 상단 탭 디자인 */
+    .stTabs [data-baseweb="tab-list"] {{ gap: 15px; border-bottom: 2px solid {card_border}; }}
+    .stTabs [data-baseweb="tab"] {{ height: 60px; font-size: 18px !important; font-weight: 600; color: {tab_color}; }}
+    .stTabs [aria-selected="true"] {{ color: #1E88E5 !important; }}
+    
+    /* 결과 보고서 카드 디자인 */
+    .report-card {{ 
+        padding: 30px; border-radius: 12px; background-color: {card_bg}; 
+        border: 1px solid {card_border}; color: {text_main};
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-top: 10px; margin-bottom: 20px; 
+    }}
+    
+    /* 사용자 질문 박스 디자인 */
+    .user-msg {{ 
+        background-color: {user_msg_bg}; color: {user_msg_text};
+        padding: 15px; border-radius: 8px; border-left: 5px solid #0288d1; margin-bottom: 10px; font-weight: bold;
+    }}
+    
+    /* 버튼 텍스트 정렬 */
+    .stButton>button {{ text-align: left !important; }}
+    
+    /* Streamlit 기본 텍스트 요소 색상 강제 적용 */
+    p, h1, h2, h3, h4, h5, h6, li {{ color: {text_main} !important; }}
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- 4. 메인 화면 ---
+st.write("시스템 상태: 🟢 최신 엔진(v1) 가동 중")
 st.title("🏢 건축 조례 및 법령 해석 지원 플랫폼")
 st.markdown("복잡한 건축 법령과 조례를 AI가 분석하여 직관적인 결과로 제공합니다.")
-st.write("") # 여백 추가
+st.write("") 
 
 tab_list = ["1️⃣ 프로젝트 개요", "2️⃣ 인공지능 분석", "3️⃣ 건축 시뮬레이션", "4️⃣ 민원 양식 생성"]
 tabs = st.tabs(tab_list)
 
 # 탭 1: 개요
 with tabs[0]:
-    st.write("") # 여백
+    st.write("") 
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("📌 1. 프로젝트 목적")
@@ -126,20 +146,18 @@ with tabs[0]:
     st.subheader("⚙️ 3. 시스템 운영 체계")
     st.info("질문 분석부터 근거 추출 및 불확실성 검토까지 이어지는 **8단계 공정**을 거쳐 답변을 생성합니다.")
 
-# 탭 2: AI 분석 (가독성 개선된 채팅 UI)
+# 탭 2: AI 분석
 with tabs[1]:
-    st.write("") # 여백
+    st.write("") 
 
-    # A. 과거 기록 열람 모드
     if st.session_state.selected_index is not None:
         idx = st.session_state.selected_index
         selected_chat = st.session_state.chat_history[idx]
         
         st.success(f"📅 과거 분석 기록 열람 중 (조회 일시: {selected_chat['time']})")
         
-        # Streamlit Native Chat UI 사용
         with st.chat_message("user"):
-            st.write(f"**질문:** {selected_chat['query']}")
+            st.markdown(f'<div class="user-msg">질문: {selected_chat["query"]}</div>', unsafe_allow_html=True)
             
         with st.chat_message("assistant"):
             st.markdown('<div class="report-card">', unsafe_allow_html=True)
@@ -152,20 +170,17 @@ with tabs[1]:
                 st.session_state.selected_index = None
                 st.rerun()
 
-    # B. 새 질문 모드
     else:
-        # 하단 고정형 채팅 입력창
         user_query = st.chat_input("분석이 필요한 건축 규제에 대해 입력해 주세요 (예: 용인시 조례 알려줘)")
         
         if user_query:
-            # 질문 즉시 표시
             with st.chat_message("user"):
-                st.write(f"**질문:** {user_query}")
+                st.markdown(f'<div class="user-msg">질문: {user_query}</div>', unsafe_allow_html=True)
             
             with st.chat_message("assistant"):
                 with st.status("분석 진행 중...", expanded=True) as status:
                     st.write("🔍 쟁점 파악 및 데이터 검색 중...")
-                    time.sleep(1) # 대기 효과
+                    time.sleep(1) 
                     db_info = get_ordinance_data(user_query)
                     
                     if db_info:
@@ -185,12 +200,10 @@ with tabs[1]:
                     
                     status.update(label="✅ 분석 완료", state="complete")
 
-                # 답변 표시
                 st.markdown('<div class="report-card">', unsafe_allow_html=True)
                 st.markdown(response_text)
                 st.markdown('</div>', unsafe_allow_html=True)
 
-            # 기록 저장
             new_record = {
                 "query": user_query,
                 "response": response_text,
