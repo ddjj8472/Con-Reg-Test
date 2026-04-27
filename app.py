@@ -21,7 +21,7 @@ apply_custom_style(st.session_state.dark_mode)
 # 4. 사이드바 구성
 with st.sidebar:
     st.title("⚙️ 플랫폼 제어")
-    st.session_state.dark_mode = st.toggle("🌙 다크 모드 켜기", value=st.session_state.dark_mode)
+    st.toggle("🌙 다크 모드 켜기", key="dark_mode")
     
     st.divider()
     st.subheader("📁 대화 이력 (클릭 시 열람)")
