@@ -45,7 +45,7 @@ def get_gemini_response(user_query, db_context=""):
             text = text.replace("*", "").replace("/", "")
             return text
         else:
-            return "엔진 응답에 실패했습니다. 잠시 후 다시 시도해주세요."
+            return f"엔진 응답 실패: {response.status_code} / {response.text}"
             
     except Exception as e:
         return f"통신 장애 발생: {str(e)}"
