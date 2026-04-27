@@ -5,19 +5,19 @@ import re
 import time
 
 def get_gemini_response(user_query, db_context=""):
-    # 1. 모델명은 gemini-1.5-flash가 가장 안정적입니다.
-    MODEL_NAME = "gemini-1.5-flash" 
+    # [복구] 승욱 님 말씀대로 2.5 버전이 이 환경의 최신 모델입니다.
+    MODEL_NAME = "gemini-2.5-flash" 
     
     try:
         api_key = st.secrets["GEMINI_API_KEY"]
         
-        # 2. [핵심 수정] v1을 v1beta로 변경하여 404 오류 해결
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME}:generateContent?key={api_key}"
+        # [복구] v1 경로 사용 (2.5 버전은 v1에서 503 응답을 줬으므로 이 경로가 맞습니다)
+        url = f"https://generativelanguage.googleapis.com/v1/models/{MODEL_NAME}:generateContent?key={api_key}"
         
         headers = {'Content-Type': 'application/json'}
         
         prompt = f"""
-        당신은 용인시 건축 조례 및 법령 전문가입니다. 
+        당신은 용인시 건축 조례 전문 해석 AI 플랫폼의 전문가입니다. 
         제공된 [참고 법규 데이터]를 최우선 근거로 사용하여 답변하십시오.
 
         [참고 법규 데이터]:
@@ -33,33 +33,34 @@ def get_gemini_response(user_query, db_context=""):
         
         payload = {"contents": [{"parts": [{"text": prompt}]}]}
         
-        # 3. 503 오류(일시적 과부하)에 대비한 재시도 로직
-        max_retries = 3
+        # [핵심] 503(High Demand) 오류를 해결하기 위한 자동 재시도 로직
+        max_retries = 5 # 재시도 횟수를 늘림
         for i in range(max_retries):
             try:
-                # 타임아웃을 100초로 설정하여 긴 법령 분석 대응
+                # 타임아웃 100초로 상향
                 response = requests.post(url, headers=headers, data=json.dumps(payload), timeout=100)
                 
                 if response.status_code == 200:
                     result = response.json()
                     text = result['candidates'][0]['content']['parts'][0]['text']
-                    # 불필요한 기호 제거
                     text = re.sub(r"\[?cite:\s?\d+\]?", "", text)
                     text = text.replace("*", "").replace("/", "")
                     return text
                 
-                # 503(서버 부하) 발생 시 잠시 대기 후 재시도
-                if response.status_code == 503 and i < max_retries - 1:
-                    time.sleep(2)
-                    continue
+                # 503(서버 부하) 발생 시 대기 시간을 늘려가며 재시도 (지수 백오프)
+                if response.status_code == 503:
+                    if i < max_retries - 1:
+                        wait_time = (i + 1) * 3 # 3초, 6초, 9초... 순으로 대기
+                        time.sleep(wait_time)
+                        continue
                 
                 return f"엔진 응답 실패: {response.status_code} / {response.text}"
                 
             except requests.exceptions.Timeout:
                 if i < max_retries - 1:
-                    time.sleep(2)
+                    time.sleep(3)
                     continue
-                return "엔진 응답 시간 초과 (100초). 데이터 양을 조절하거나 다시 시도해 주세요."
+                return "엔진 응답 시간 초과 (100초). 다시 시도해 주세요."
 
     except Exception as e:
         return f"통신 장애 발생: {str(e)}"
