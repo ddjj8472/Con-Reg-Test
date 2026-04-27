@@ -42,9 +42,10 @@ def apply_custom_style(is_dark: bool):
     .report-card {{ padding: 30px; border-radius: 12px; background-color: {c['card']}; border: 1px solid {c['border']}; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin: 10px 0 20px; }}
     .user-msg {{ background-color: {c['msg_bg']}; color: {c['msg_txt']}; padding: 15px; border-radius: 8px; border-left: 5px solid #0288d1; margin-bottom: 10px; font-weight: bold; }}
 
-    /* 채팅 입력창 하단 고정 및 답변 영역 겹침 방지 */
-    [data-testid="stChatInput"] {{ position: fixed; bottom: 40px; left: 22rem; right: 2rem; z-index: 999; }}
-    .main .block-container {{ padding-bottom: 160px; }}
+    /* 채팅 입력창 하단 고정 및 하단 영역 배경 처리 */
+    .stApp::after {{ content: ""; position: fixed; left: 22rem; right: 0; bottom: 0; height: 95px; background-color: {c['bg']}; z-index: 998; pointer-events: none; }}
+    [data-testid="stChatInput"] {{ position: fixed !important; bottom: 35px !important; left: 22rem !important; right: 2rem !important; z-index: 9999 !important; }}
+    .main .block-container {{ padding-bottom: 240px !important; }}
      
     </style>
     """, unsafe_allow_html=True)
