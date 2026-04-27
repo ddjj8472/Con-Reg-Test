@@ -42,11 +42,9 @@ def apply_custom_style(is_dark: bool):
     .report-card {{ padding: 30px; border-radius: 12px; background-color: {c['card']}; border: 1px solid {c['border']}; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin: 10px 0 20px; }}
     .user-msg {{ background-color: {c['msg_bg']}; color: {c['msg_txt']}; padding: 15px; border-radius: 8px; border-left: 5px solid #0288d1; margin-bottom: 10px; font-weight: bold; }}
 
-    /* 채팅 입력창 하단 고정 */
+    /* 채팅 입력창 하단 고정 및 답변 영역 겹침 방지 */
     [data-testid="stChatInput"] {{ position: fixed; bottom: 40px; left: 22rem; right: 2rem; z-index: 999; }}
-
-    /* 입력창이 본문 내용을 가리지 않도록 아래 여백 확보 */
-     .main .block-container {{ padding-bottom: 160px; }}
+    .main .block-container {{ padding-bottom: 160px; }}
      
     </style>
     """, unsafe_allow_html=True)
