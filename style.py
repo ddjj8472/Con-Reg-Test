@@ -41,7 +41,7 @@ def apply_custom_style(is_dark: bool):
     /* 채팅 박스 및 보고서 카드 (줄바꿈 최소화) */
     .report-card {{ padding: 30px; border-radius: 12px; background-color: {c['card']}; border: 1px solid {c['border']}; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin: 10px 0 20px; }}
     .user-msg {{ background-color: {c['msg_bg']}; color: {c['msg_txt']}; padding: 15px; border-radius: 8px; border-left: 5px solid #0288d1; margin-bottom: 10px; font-weight: bold; }}
-    .report-card .report-title {{font-size: 22px !important;font-weight: 800 !important;}}
+    .report-card .report-title {{font-size: 20px !important;font-weight: 800 !important;}}
 
     /* 채팅 입력창 하단 고정 및 하단 영역 배경 처리 */
     .stApp::after {{ content: ""; position: fixed; left: 22rem; right: 0; bottom: 0; height: 95px; background-color: {c['bg']}; z-index: 998; pointer-events: none; }}
