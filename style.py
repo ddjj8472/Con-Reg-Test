@@ -37,10 +37,16 @@ def apply_custom_style(is_dark: bool):
     .report-card {{ padding: 25px; border-radius: 12px; background-color: {c['card']}; border: 1px solid {c['border']}; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px; line-height: 1.6; }}
     .user-msg {{ background-color: {c['msg_bg']}; color: {c['msg_txt']}; padding: 15px; border-radius: 8px; border-left: 5px solid #0288d1; margin-bottom: 10px; font-weight: bold; }}
     
-    /* 🔥 하단 채팅 입력창(st.chat_input) 다크모드 하얀 배경 겉도는 현상 철저히 제거 */
-    [data-testid="stChatInput"] {{ background-color: {c['bg']} !important; }} /* 최외곽 여백 */
+    /* 🔥 [핵심 추가] 하단 고정 바(stBottom) 하얀색 배경 완벽 동기화 */
+    [data-testid="stBottom"],
+    [data-testid="stBottom"] > div,
+    [data-testid="stBottomBlockContainer"] {{
+        background-color: {c['bg']} !important;
+    }}
+    
+    /* 채팅 입력창 내부 텍스트 박스 디자인 */
+    [data-testid="stChatInput"] {{ background-color: transparent !important; }} 
     [data-testid="stChatInput"] > div {{ background-color: transparent !important; }}
-    /* 내부 텍스트 에어리어까지 색상 강제 주입 */
     [data-testid="stChatInput"] [data-baseweb="textarea"],
     [data-testid="stChatInput"] [data-baseweb="base-input"],
     [data-testid="stChatInput"] > div > div {{
@@ -52,6 +58,6 @@ def apply_custom_style(is_dark: bool):
         -webkit-text-fill-color: {c['txt']} !important;
         caret-color: {c['txt']} !important;
     }}
-    [data-testid="stChatInput"] svg {{ fill: {c['txt']} !important; }} /* 전송 버튼(종이비행기) 색상 */
+    [data-testid="stChatInput"] svg {{ fill: {c['txt']} !important; }}
     </style>
     """, unsafe_allow_html=True)
