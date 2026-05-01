@@ -26,9 +26,9 @@ def get_semantic_keywords(user_query):
 def get_gemini_response(user_query, db_status, db_context, semantic_tags=""):
     """
     [Step 2] 최종 답변 생성: 
-    - 3개 항목 체제 (결론, 핵심 근거, 세부 해석)
-    - 태그 노출 금지 및 표(Table) 생성 금지
-    - 데이터 부족 시 일반 지식 보완 안내 문구 강제
+    - 3개 항목 체제 (결론, 핵심 근거, 세부 해석) 엄격 준수
+    - 전문가 자기소개 문구 및 요약 섹션 삭제
+    - 데이터 부족 시 일반 지식 보완 안내 문구 강제 삽입
     """
     MODEL_NAME = "gemini-2.5-flash" 
     api_key = st.secrets["GEMINI_API_KEY"]
@@ -39,17 +39,17 @@ def get_gemini_response(user_query, db_status, db_context, semantic_tags=""):
     if db_status in ["INCOMPLETE", "NO_DATA"]:
         status_instruction = """
         [데이터 보충 지침]
-        현재 DB에 직접적인 정보가 부족합니다.
-        1. '세부 해석' 섹션 가장 첫 줄에 다음 문구를 반드시 포함하십시오: 
+        현재 데이터베이스에 직접적인 정보가 부족하므로 다음을 반드시 이행하십시오:
+        1. '### 세부 해석' 섹션의 첫 문장을 반드시 다음과 같이 시작하십시오: 
            "현재 데이터베이스만으로는 정보 제공이 완료될 수 없어 일반 지식을 사용하여 답변합니다."
-        2. 그 후 당신의 전문 지식을 활용해 질문에 대한 상세한 해답을 작성하십시오.
+        2. 그 후 당신의 법률적 지식을 활용해 상세히 답변하십시오.
         """
     else:
-        status_instruction = "제공된 데이터베이스 내용을 바탕으로 전문적인 해석을 수행하십시오."
+        status_instruction = "제공된 데이터베이스 내용을 최우선 근거로 사용하여 답변하십시오."
 
     prompt = f"""
-    당신은 대한민국 건축/도시계획 행정 전문가입니다. 
-    다음 지침에 따라 질문에 답변하십시오.
+    당신은 대한민국 건축 및 도시계획 행정 전문가 역할을 수행합니다. 
+    사용자의 질문에 대해 아래 지침을 엄격히 준수하여 보고서 형식으로 답변하십시오.
 
     {status_instruction}
 
@@ -58,19 +58,16 @@ def get_gemini_response(user_query, db_status, db_context, semantic_tags=""):
     {db_context}
 
     보고서 구성 및 금지 규칙:
-    1. 인삿말을 생략하고 바로 본론(항목)으로 시작하십시오.
-    2. 다음 3개 항목으로만 구성하십시오:
+    1. 답변 본문에 "전문가로서 답변드립니다" 또는 "저는 ~전문가입니다"와 같은 자기소개 문구를 절대 포함하지 마십시오. 
+    2. 인사말 없이 바로 다음 3개 항목으로만 구성을 종료하십시오:
        ### 결론
-       (질문에 대한 핵심 요약)
        ### 핵심 근거
-       (DB 내 관련 조문 또는 상위 법령 명칭)
        ### 세부 해석
-       (DB 분석 내용 및 일반 지식을 활용한 상세 설명)
     3. 금지 사항: 
-       - '원문 링크', '적용 지역', '담당 기관' 항목을 작성하지 마십시오.
-       - '[법률 분석 태그]'와 같은 문구를 절대 본문에 노출하지 마십시오.
-       - 표(Table)나 차트를 절대 만들지 마십시오. 오직 텍스트로만 설명하십시오.
-       - 별표(*)와 슬래시(/)를 절대 사용하지 마십시오.
+       - '주요 차이점 요약', '원문 링크', '적용 지역' 등 위 3개 외의 추가 항목을 만들지 마십시오.
+       - '[참조용 시맨틱 태그]' 또는 '[법률 분석 태그]'와 같은 시스템 용어를 본문에 노출하지 마십시오.
+       - 표(Table), 리스트 요약, 차트를 만들지 말고 줄글 형식으로 상세히 설명하십시오.
+       - 별표(*)와 슬래시(/) 사용을 절대 금지합니다.
 
     질문: {user_query}
     """
@@ -82,12 +79,12 @@ def get_gemini_response(user_query, db_status, db_context, semantic_tags=""):
             res = requests.post(url, headers=headers, data=json.dumps(payload), timeout=100)
             if res.status_code == 200:
                 text = res.json()['candidates'][0]['content']['parts'][0]['text']
-                # 정제: 금지 기호 및 불필요한 인용구 제거
+                # 정제 로직: 불필요한 인용구 및 금지 기호 제거
                 text = re.sub(r"\[?cite:\s?\d+\]?", "", text)
                 text = text.replace("*", "").replace("/", "")
-                # 법률 분석 태그 관련 잔여 문구 제거
-                text = text.replace("[법률 분석 태그]:", "").replace("법률 분석 태그:", "")
-                return text
+                # 시스템 태그 관련 잔여 문구 제거
+                text = text.replace("[참조용 시맨틱 태그]", "").replace("[법률 분석 태그]", "")
+                return text.strip()
             time.sleep(2)
         except:
             continue
