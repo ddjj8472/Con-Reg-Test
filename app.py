@@ -27,7 +27,7 @@ apply_custom_style(st.session_state.dark_mode)
 # 4. 사이드바 구성
 with st.sidebar:
     st.title("⚙️ 플랫폼 제어")
-    st.toggle("🌙 다크 모드", key="dark_mode") # key 사용으로 버튼 두번 클릭 버그 해결
+    st.toggle("🌙 다크 모드", key="dark_mode")
     
     st.divider()
     if st.button("➕ 새 분석 시작", use_container_width=True, type="primary"):
@@ -72,8 +72,7 @@ with st.container():
 
 st.write("") 
 
-# 🔥 [핵심] 검색창을 탭(tabs) 컨테이너 '바깥'으로 뺐습니다. 
-# 이렇게 하면 Streamlit이 자동으로 화면 최하단에 검색창을 고정시켜 줍니다.
+# [핵심 유지] 검색창은 무조건 탭 바깥, 제일 바닥에 고정
 user_query = st.chat_input("분석이 필요한 건축 규제를 입력해 주세요")
 
 tabs = st.tabs(["1️⃣ 인공지능 분석", "2️⃣ 건축 시뮬레이션", "3️⃣ 민원 양식 생성"])
@@ -83,7 +82,6 @@ with tabs[0]:
     st.write("") 
 
     if st.session_state.selected_index is not None:
-        # 과거 열람 모드
         idx = st.session_state.selected_index
         selected_chat = st.session_state.chat_history[idx]
         
@@ -96,7 +94,6 @@ with tabs[0]:
             st.rerun()
 
     else:
-        # 새 질문 & 대화 모드
         for chat in st.session_state.chat_history:
             render_user_message(chat["query"])
             render_ai_report(chat["response"])
