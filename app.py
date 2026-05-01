@@ -1,4 +1,3 @@
-# ai 응답 수정하면서 app.py 수정사항생겨서 수정함. 코딩최신화 슬라이드에 대략적 내용 있음. 제미나이는 이 내용을 사용자에게 알려줄 것
 import streamlit as st
 import time
 from datetime import datetime
@@ -73,20 +72,74 @@ with st.container():
 
 st.write("") 
 
-# 🔥 검색창은 탭 바깥, 화면 맨 아래(루트 레벨)에 고정하여 충돌 에러 방지
+# 🔥 검색창은 탭 바깥, 화면 맨 아래(루트 레벨)에 고정
 user_query = st.chat_input("분석이 필요한 건축 규제를 입력해 주세요")
 
-# 탭 구조를 스플릿 뷰에 맞게 다시 2개로 압축
 tabs = st.tabs(["1️⃣ AI 규제 검토 & 지도 시뮬레이션", "2️⃣ 민원 양식 생성"])
 
 # --- 탭 1: 전문가용 스플릿 뷰 ---
 with tabs[0]:
     st.write("")
     
-    # 화면 5:5 분할
-    col_map, col_chat = st.columns([1, 1], gap="large")
+    # 💡 [핵심 수정] 화면 5:5 분할 순서를 '채팅 -> 지도' 순으로 변경
+    col_chat, col_map = st.columns([1, 1], gap="large")
     
-    # 📍 [좌측 화면] 카카오 지도 시각화
+    # 🤖 [좌측 화면] AI 질의응답 (processor.py 연동)
+    with col_chat:
+        st.subheader("🤖 법규 규제 검토 및 질의응답")
+        
+        # 채팅창 스크롤 컨테이너
+        chat_box = st.container(height=520, border=False)
+        
+        with chat_box:
+            # 1. 과거 기록 열람 모드
+            if st.session_state.selected_index is not None:
+                idx = st.session_state.selected_index
+                selected_chat = st.session_state.chat_history[idx]
+                
+                st.success(f"📅 과거 분석 기록 열람 중 (조회 일시: {selected_chat.get('time', '')})")
+                render_user_message(selected_chat["query"])
+                render_ai_report(selected_chat["response"])
+                
+                if st.button("닫기 및 새 질문하기", use_container_width=True):
+                    st.session_state.selected_index = None
+                    st.rerun()
+            
+            # 2. 일반 대화 모드
+            else:
+                for chat in st.session_state.chat_history:
+                    render_user_message(chat["query"])
+                    render_ai_report(chat["response"])
+
+                # 질문 처리 로직
+                if user_query:
+                    render_user_message(user_query)
+                    
+                    with st.status("🔍 심층 분석 진행 중...", expanded=True) as status:
+                        try:
+                            st.write("🛰️ 법률 시맨틱 레이어 및 통합 엔진 가동 중...")
+                            response_text = process_architectural_query(user_query)
+                            
+                            status.update(label="✅ 분석 완료", state="complete")
+                            render_ai_report(response_text)
+                            
+                            # 기록 저장
+                            st.session_state.chat_history.append({
+                                "query": user_query,
+                                "response": response_text,
+                                "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            })
+                            save_history(st.session_state.chat_history)
+                            
+                        except Exception as e:
+                            status.update(label="❌ 시스템 에러 발생", state="error")
+                            st.error(f"시스템 처리 중 오류가 발생했습니다: {str(e)}")
+                            with st.expander("에러 상세 내용 보기"):
+                                st.code(traceback.format_exc())
+                                
+                    st.rerun()
+
+    # 📍 [우측 화면] 카카오 지도 시각화
     with col_map:
         st.subheader("🗺️ 대지 위치 및 건축선 시각화")
         
@@ -133,63 +186,6 @@ with tabs[0]:
             st.warning("🚧 카카오 JavaScript API 키를 코드에 입력해 주세요.")
         else:
             components.html(map_html, height=590)
-
-    # 🤖 [우측 화면] AI 질의응답 (processor.py 연동)
-    with col_chat:
-        st.subheader("🤖 법규 규제 검토 및 질의응답")
-        
-        # 채팅창 스크롤 컨테이너
-        chat_box = st.container(height=520, border=False)
-        
-        with chat_box:
-            # 1. 과거 기록 열람 모드
-            if st.session_state.selected_index is not None:
-                idx = st.session_state.selected_index
-                selected_chat = st.session_state.chat_history[idx]
-                
-                st.success(f"📅 과거 분석 기록 열람 중 (조회 일시: {selected_chat.get('time', '')})")
-                render_user_message(selected_chat["query"])
-                render_ai_report(selected_chat["response"])
-                
-                if st.button("닫기 및 새 질문하기", use_container_width=True):
-                    st.session_state.selected_index = None
-                    st.rerun()
-            
-            # 2. 일반 대화 모드
-            else:
-                for chat in st.session_state.chat_history:
-                    render_user_message(chat["query"])
-                    render_ai_report(chat["response"])
-
-                # 사용자가 입력창에 질문을 넣었을 때 처리 로직
-                if user_query:
-                    render_user_message(user_query)
-                    
-                    with st.status("🔍 심층 분석 진행 중...", expanded=True) as status:
-                        try:
-                            # 새 백엔드 로직 호출
-                            st.write("🛰️ 법률 시맨틱 레이어 및 통합 엔진 가동 중...")
-                            response_text = process_architectural_query(user_query)
-                            
-                            status.update(label="✅ 분석 완료", state="complete")
-                            render_ai_report(response_text)
-                            
-                            # 기록 저장
-                            st.session_state.chat_history.append({
-                                "query": user_query,
-                                "response": response_text,
-                                "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                            })
-                            save_history(st.session_state.chat_history)
-                            
-                        except Exception as e:
-                            status.update(label="❌ 시스템 에러 발생", state="error")
-                            st.error(f"시스템 처리 중 오류가 발생했습니다: {str(e)}")
-                            with st.expander("에러 상세 내용 보기"):
-                                st.code(traceback.format_exc())
-                                
-                    # 응답 완료 후 새로고침하여 입력창 비우고 UI 갱신
-                    st.rerun()
 
 # --- 탭 2: 민원 양식 생성 ---
 with tabs[1]:
