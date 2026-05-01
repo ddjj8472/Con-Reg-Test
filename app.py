@@ -21,9 +21,12 @@ if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
 if "selected_index" not in st.session_state:
     st.session_state.selected_index = None
-# [추가] 현재 화면 상태를 저장하는 변수 (기본값은 'main')
 if "current_page" not in st.session_state:
     st.session_state.current_page = "main"
+
+# [새로 추가된 부분] Q&A 게시판 데이터 저장용 리스트
+if "qna_list" not in st.session_state:
+    st.session_state.qna_list = []
 
 # 3. 스타일 적용
 apply_custom_style(st.session_state.dark_mode)
@@ -214,21 +217,87 @@ elif st.session_state.current_page == "qna":
     st.write("플랫폼 사용법 및 건축 법령 해석과 관련된 질문을 확인하고 남길 수 있습니다.")
     st.divider()
     
-    with st.expander("Q. 이 플랫폼은 어떤 데이터를 바탕으로 답변하나요?"):
+    # 1. 예시 질문 (ex 표시 추가)
+    st.subheader("📌 자주 묻는 질문 (기본 예시)")
+    with st.expander("ex) 이 플랫폼은 어떤 데이터를 바탕으로 답변하나요?"):
         st.write("A. 용인시/경기도 건축 조례 및 125개 상위 법령 데이터를 통합하여 답변합니다.")
-    with st.expander("Q. 과거 분석 기록은 어떻게 확인하나요?"):
+    with st.expander("ex) 과거 분석 기록은 어떻게 확인하나요?"):
         st.write("A. 좌측 사이드바의 '대화 이력'에서 클릭하여 열람할 수 있습니다.")
 
     st.divider()
+
+    # 2 & 3. 사용자 질문 목록 및 상태 표시 ('대기중' / '답변완료')
+    st.subheader("📋 사용자 질문 목록")
+    if len(st.session_state.qna_list) == 0:
+        st.caption("아직 등록된 질문이 없습니다. 첫 번째 질문을 남겨보세요!")
+    else:
+        for i, q in enumerate(st.session_state.qna_list):
+            # 상태에 따라 아이콘과 텍스트 변경
+            status_badge = "🔴 대기중" if q['status'] == "대기중" else "🟢 답변완료"
+            
+            with st.expander(f"[{status_badge}] {q['title']}"):
+                st.write(f"**Q. {q['content']}**")
+                
+                # 답변이 완료된 경우에만 답변 내용 표시
+                if q['status'] == "답변완료":
+                    st.info(f"**A. {q['answer']}**")
+
+    st.divider()
+
+    # 질문 등록 폼 (clear_on_submit=True로 설정하여 제출 후 폼 비우기)
     st.subheader("📝 새로운 질문 남기기")
-    with st.form("qna_form"):
+    with st.form("qna_form", clear_on_submit=True):
         q_title = st.text_input("질문 제목")
-        q_content = st.text_area("질문 내용")
+        q_content = st.text_area("질문 내용 (구체적으로 작성해주세요)")
         if st.form_submit_button("질문 등록하기"):
             if q_title and q_content:
-                st.success("질문이 등록되었습니다! (현재 UI 테스트 모드)")
+                # 새로운 질문 데이터를 딕셔너리 형태로 리스트에 추가
+                new_question = {
+                    "title": q_title,
+                    "content": q_content,
+                    "status": "대기중",  # 초기 상태는 무조건 대기중
+                    "answer": ""
+                }
+                st.session_state.qna_list.append(new_question)
+                st.success("질문이 성공적으로 등록되었습니다! 관리자 확인 후 답변이 달립니다.")
+                st.rerun()  # 화면을 새로고침하여 목록에 즉시 반영
             else:
                 st.error("제목과 내용을 모두 입력해 주세요.")
+
+    st.divider()
+
+    # 3. 관리자용 답변 작성 기능
+    st.subheader("🛠️ 관리자 메뉴 (답변 달기)")
+    admin_toggle = st.toggle("관리자 모드 켜기")
+    
+    if admin_toggle:
+        admin_pw = st.text_input("관리자 비밀번호 입력", type="password")
+        # 실제 서비스에서는 보안을 위해 강력한 비밀번호를 사용하세요. (현재는 2026)
+        if admin_pw == "2026":
+            st.success("관리자 인증 완료! 대기중인 질문에 답변을 달아주세요.")
+            
+            # 대기중인 질문만 필터링하여 답변 폼 생성
+            pending_questions = [q for q in st.session_state.qna_list if q['status'] == "대기중"]
+            
+            if not pending_questions:
+                st.write("✅ 현재 답변을 기다리는 질문이 없습니다.")
+            else:
+                for i, q in enumerate(st.session_state.qna_list):
+                    if q['status'] == "대기중":
+                        with st.container():
+                            st.write(f"**질문:** {q['title']}")
+                            # 고유한 key 값을 위해 인덱스(i) 사용
+                            answer_text = st.text_area("답변 작성란", key=f"ans_{i}")
+                            
+                            if st.button("답변 완료 및 등록", key=f"btn_{i}"):
+                                if answer_text:
+                                    st.session_state.qna_list[i]['answer'] = answer_text
+                                    st.session_state.qna_list[i]['status'] = "답변완료" # 상태 업데이트
+                                    st.rerun()
+                                else:
+                                    st.warning("답변 내용을 입력해주세요.")
+        elif admin_pw:
+            st.error("비밀번호가 일치하지 않습니다.")
 
 # --- 사이트맵 화면 ---
 elif st.session_state.current_page == "sitemap":
