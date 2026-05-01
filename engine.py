@@ -5,52 +5,68 @@ import re
 import time
 
 def get_gemini_response(user_query, db_context=""):
-    # [복구] 승욱 님 말씀대로 2.5 버전이 이 환경의 최신 모델입니다.
+    # [복구] 최신 환경에 맞춘 모델 설정
     MODEL_NAME = "gemini-2.5-flash" 
     
     try:
         api_key = st.secrets["GEMINI_API_KEY"]
-        
-        # [복구] v1 경로 사용 (2.5 버전은 v1에서 503 응답을 줬으므로 이 경로가 맞습니다)
         url = f"https://generativelanguage.googleapis.com/v1/models/{MODEL_NAME}:generateContent?key={api_key}"
-        
         headers = {'Content-Type': 'application/json'}
         
+        # [프롬프트 개선] DB 한계 인정 및 일반 지식 보완 로직 강화
         prompt = f"""
-        당신은 용인시 건축 조례 전문 해석 AI 플랫폼의 전문가입니다. 
-        제공된 [참고 법규 데이터]를 최우선 근거로 사용하여 답변하십시오.
+        당신은 '용인시 건축 조례 전문 해석 AI 플랫폼'의 행정 전문가입니다. 
+        사용자의 질문에 대해 제공된 [참고 법규 데이터]를 바탕으로 1차 분석을 수행하십시오.
 
         [참고 법규 데이터]:
-        {db_context if db_context else "직접적인 조례 데이터를 찾지 못했습니다. 일반적인 건축법령 지식에 기반하되 공식 확인이 필요함을 명시하십시오."}
+        {db_context if db_context else "해당 질문과 관련된 직접적인 조문이 데이터베이스에 존재하지 않습니다."}
 
-        답변 규칙:
-        1. 별표(*)와 슬래시(/)는 절대 사용하지 마십시오.
-        2. 질문의 성격에 따라 형식을 달리하십시오.
-        3. 6개 항목 구성 (사례 질문용): 결론, 적용 지역, 핵심 근거, 세부 해석, 원문 링크, 담당 기관.
+        답변 생성 가이드라인:
+        1. [DB 한계 및 간접 정보 명기]: 
+           - 제공된 데이터에 질문과 관련된 간접적인 언급이 있다면 반드시 '핵심 근거'와 '세부 해석'에 먼저 포함시키십시오.
+           - 만약 데이터베이스의 정보만으로 질문에 대한 직접적이고 완전한 해답을 제공할 수 없는 경우, 반드시 답변 서두나 세부 해석 도입부에 다음 문구를 명시하십시오:
+             "현재 데이터베이스만으로는 정보 제공이 완료될 수 없어 일반 지식을 사용하여 답변합니다."
+
+        2. [일반 지식 보완]: 
+           - 위 문구를 명시한 후, 당신이 보유한 전문적인 건축법령 및 행정 지식을 사용하여 질문에 대한 명확한 해답(예: 정의, 차이점 등)을 제공하십시오.
+
+        3. [구조 및 형식]:
+           - 별표(*)와 슬래시(/)는 절대 사용하지 마십시오.
+           - 다음 6개 항목을 반드시 준수하여 구성하십시오:
+             결론: (질문에 대한 핵심 요약)
+             적용 지역: (법규의 적용 범위)
+             핵심 근거: (DB 내 간접 조항 및 관련 상위 법령 명칭)
+             세부 해석: (DB 내용 분석 + 정보 보완 안내 문구 + 일반 지식 기반 상세 설명)
+             원문 링크: (정보가 있을 경우만 기재, 없으면 '정보 없음')
+             담당 기관: (용인시 관련 부서 및 중앙행정기관)
 
         질문: {user_query}
         """
         
         payload = {"contents": [{"parts": [{"text": prompt}]}]}
         
-        # [핵심] 503(High Demand) 오류를 해결하기 위한 자동 재시도 로직
-        max_retries = 5 # 재시도 횟수를 늘림
+        # [핵심] 자동 재시도 로직
+        max_retries = 5 
         for i in range(max_retries):
             try:
-                # 타임아웃 100초로 상향
                 response = requests.post(url, headers=headers, data=json.dumps(payload), timeout=100)
                 
                 if response.status_code == 200:
                     result = response.json()
                     text = result['candidates'][0]['content']['parts'][0]['text']
+                    # 불필요한 태그 및 금지 기호 제거
                     text = re.sub(r"\[?cite:\s?\d+\]?", "", text)
                     text = text.replace("*", "").replace("/", "")
                     return text
                 
-                # 503(서버 부하) 발생 시 대기 시간을 늘려가며 재시도 (지수 백오프)
+                if response.status_code == 429:
+                    # 유료 계정이라도 짧은 시간 내 과도한 요청 시 발생 가능
+                    time.sleep(2)
+                    continue
+
                 if response.status_code == 503:
                     if i < max_retries - 1:
-                        wait_time = (i + 1) * 3 # 3초, 6초, 9초... 순으로 대기
+                        wait_time = (i + 1) * 3
                         time.sleep(wait_time)
                         continue
                 
