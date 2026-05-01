@@ -68,6 +68,7 @@ def get_ordinance_data(query):
                 mask &= df[cfg['content']].str.contains(kw, na=False, case=False)
             
             res = df[mask]
+            print(f"--- [검색 로그] 파일: {f_name} | 검색어: {keywords} | 결과 수: {len(res)} ---")
             for _, row in res.iterrows():
                 art_name = row[cfg['name']]
                 if art_name in processed_articles: continue
