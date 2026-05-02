@@ -305,7 +305,7 @@ elif st.session_state.current_page == "sitemap":
     st.info("현재 구축된 용인시 건축 조례 지원 플랫폼의 전체 시스템 구조도입니다.")
     st.write("")
 
-    # HTML/CSS를 활용한 아키텍처 구조도 렌더링
+    # (이전과 동일한 HTML/CSS 코드 유지)
     architecture_html = """
     <style>
         .arch-container {
@@ -416,8 +416,9 @@ elif st.session_state.current_page == "sitemap":
     </div>
     """
     
-    # HTML 코드 렌더링
-    st.markdown(architecture_html, unsafe_allow_html=True)
+    # 🚨 [수정된 부분] st.markdown 대신 components.html을 사용하여 렌더링 오류를 차단합니다.
+    components.html(architecture_html, height=550, scrolling=False)
+    
     st.divider()
     
     # 각 블록에 대한 간단한 텍스트 부연 설명 추가
