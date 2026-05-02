@@ -1,5 +1,6 @@
 import streamlit as st
 import re
+import uuid
 
 def render_user_message(query):
     st.markdown(f'<div class="user-msg">질문: {query}</div>', unsafe_allow_html=True)
