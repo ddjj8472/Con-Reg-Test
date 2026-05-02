@@ -34,15 +34,12 @@ apply_custom_style(st.session_state.dark_mode)
 with st.sidebar:
     st.title("⚙️ 플랫폼 제어")
     
-    # [요청사항 3, 4] 사이드바 네비게이션 구조 개편
     st.subheader("📌 메뉴")
-    if st.button("🏠 메인화면", use_container_width=True):
+    # [요청사항 반영] 1, 2 숫자 제거 및 메인화면에 챗봇 기능 통합
+    if st.button("🏠 메인화면 (챗봇)", use_container_width=True):
         st.session_state.current_page = "main"
         st.rerun()
-    if st.button("🤖 1️⃣ AI 규제 검토 & 지도 시뮬레이션", use_container_width=True):
-        st.session_state.current_page = "ai_review"
-        st.rerun()
-    if st.button("📝 2️⃣ 민원 양식 생성", use_container_width=True):
+    if st.button("📝 민원 양식 생성", use_container_width=True):
         st.session_state.current_page = "doc_gen"
         st.rerun()
     if st.button("💡 Q&A 게시판", use_container_width=True):
@@ -56,10 +53,9 @@ with st.sidebar:
     st.toggle("🌙 다크 모드", key="dark_mode")
     
     st.divider()
-    # [요청사항 2] 텍스트 수정: 새 분석 시작 -> 새 대화 시작
     if st.button("➕ 새 대화 시작", use_container_width=True, type="primary"):
         st.session_state.selected_index = None
-        st.session_state.current_page = "ai_review" # 대화 시작시 AI 검토 화면으로 이동
+        st.session_state.current_page = "main" # 새 대화 시작 시 메인화면(챗봇)으로 이동
         st.rerun()
         
     st.divider()
@@ -76,7 +72,7 @@ with st.sidebar:
             
             if st.button(f"🕒 {time_str} | {query_summary}", key=f"hist_{actual_index}", use_container_width=True):
                 st.session_state.selected_index = actual_index
-                st.session_state.current_page = "ai_review" # 과거 기록 열람 시 AI 검토 화면으로 강제 이동
+                st.session_state.current_page = "main" # 과거 기록 열람 시 메인화면(챗봇)으로 이동
                 st.rerun()
     else:
         st.caption("저장된 분석 기록이 없습니다.")
@@ -91,10 +87,10 @@ with st.sidebar:
 
 
 # ==========================================
-# 5. 메인 화면 (페이지별 분기 처리)
+# 5. 화면 분기 처리
 # ==========================================
 
-# --- 🏠 1. 메인화면 (환영 및 소개) ---
+# --- 🏠 1. 메인화면 (소개 + 챗봇 + 지도 통합) ---
 if st.session_state.current_page == "main":
     st.write("시스템 상태: 🟢 엔진 정상 가동 중")
     st.title("🏢 건축 조례 및 법령 해석 지원 플랫폼")
@@ -105,20 +101,13 @@ if st.session_state.current_page == "main":
         **📍 프로젝트 범위:** 용인시 및 경기도 건축 조례, 상위 법령 125개 데이터 통합.
         """)
     st.write("") 
-    st.markdown("### 👈 좌측 사이드바 메뉴에서 원하시는 기능을 선택해 주세요.")
 
-
-# --- 🤖 2. AI 규제 검토 & 시뮬레이션 ---
-elif st.session_state.current_page == "ai_review":
-    st.title("🤖 AI 규제 검토 & 지도 시뮬레이션")
-    st.write("")
-    
-    # 탭이 사라졌으므로 전체 화면 레이아웃으로 분리
+    # 챗봇 및 지도 레이아웃
     col_chat, col_map = st.columns([1, 1], gap="large")
     user_query = st.chat_input("분석이 필요한 건축 규제를 입력해 주세요")
     
     with col_chat:
-        st.subheader("🤖 법규 규제 검토 및 질의응답")
+        st.subheader("🤖 법규 규제 검토 및 질의응답 (챗봇)")
         chat_box = st.container(height=520, border=False)
         
         with chat_box:
@@ -184,14 +173,14 @@ elif st.session_state.current_page == "ai_review":
             components.html(map_html, height=590)
 
 
-# --- 📝 3. 민원 양식 생성 ---
+# --- 📝 2. 민원 양식 생성 ---
 elif st.session_state.current_page == "doc_gen":
     st.title("📝 민원 양식 생성")
     st.write("")
     st.warning("🚧 행정 민원 지원 기능 준비 중")
 
 
-# --- 💡 4. Q&A 게시판 ---
+# --- 💡 3. Q&A 게시판 ---
 elif st.session_state.current_page == "qna":
     st.title("💡 자주 묻는 질문 (FAQ) 및 Q&A")
     st.write("플랫폼 사용법 및 건축 법령 해석과 관련된 질문을 확인하고 남길 수 있습니다.")
@@ -253,13 +242,12 @@ elif st.session_state.current_page == "qna":
             st.error("비밀번호가 일치하지 않습니다.")
 
 
-# --- 🗺️ 5. 사이트맵 ---
+# --- 🗺️ 4. 사이트맵 ---
 elif st.session_state.current_page == "sitemap":
     st.title("🗺️ 플랫폼 시스템 아키텍처 및 사이트맵")
     st.info("용인시 건축 조례 전문 해석 AI 플랫폼의 전체 구조와 취급 법규 목록입니다.")
     st.write("")
 
-    # [요청사항 1 반영] 구글 스토어 공식 앱 아이콘으로 외부 이미지 링크 교체 (깨짐 방지)
     architecture_html = """
     <style>
         .arch-container { background-color: #0b459c; padding: 20px; border-radius: 12px; font-family: 'Malgun Gothic', sans-serif; color: #333; }
