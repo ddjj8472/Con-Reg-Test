@@ -5,12 +5,21 @@ import traceback
 import streamlit.components.v1 as components 
 import pandas as pd
 import numpy as np
+import base64
+import os
 
 # [구조 분리] 백엔드 통합 프로세서
 from processor import handle_ai_analysis 
 from style import apply_custom_style
 from components import render_user_message, render_ai_report
 from storage import load_history, save_history 
+
+# --- [로컬 이미지 변환 함수] 이미지가 깨지지 않도록 Base64로 인코딩 ---
+def get_image_base64(image_path):
+    if os.path.exists(image_path):
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    return "" # 파일이 없을 경우 빈 문자열 반환
 
 # 1. 페이지 설정 (최상단)
 st.set_page_config(page_title="용인시 건축 조례 지원 플랫폼", layout="wide")
@@ -36,7 +45,6 @@ with st.sidebar:
     
     st.subheader("📌 메뉴")
     
-    # [요청사항 반영] 지도 기능을 3번째 메뉴로 추가 & 번호 없음
     if st.button("🏠 메인화면 (챗봇)", use_container_width=True):
         st.session_state.current_page = "main"
         st.rerun()
@@ -59,7 +67,7 @@ with st.sidebar:
     st.divider()
     if st.button("➕ 새 대화 시작", use_container_width=True, type="primary"):
         st.session_state.selected_index = None
-        st.session_state.current_page = "main" # 새 대화 시작 시 메인화면(챗봇)으로 이동
+        st.session_state.current_page = "main"
         st.rerun()
         
     st.divider()
@@ -76,7 +84,7 @@ with st.sidebar:
             
             if st.button(f"🕒 {time_str} | {query_summary}", key=f"hist_{actual_index}", use_container_width=True):
                 st.session_state.selected_index = actual_index
-                st.session_state.current_page = "main" # 과거 기록 열람 시 메인화면(챗봇)으로 이동
+                st.session_state.current_page = "main"
                 st.rerun()
     else:
         st.caption("저장된 분석 기록이 없습니다.")
@@ -108,7 +116,6 @@ if st.session_state.current_page == "main":
 
     st.subheader("🤖 법규 규제 검토 및 질의응답 (챗봇)")
     
-    # 챗봇을 넓은 화면으로 사용
     chat_box = st.container(height=550, border=False)
     user_query = st.chat_input("분석이 필요한 건축 규제를 입력해 주세요")
     
@@ -225,29 +232,6 @@ elif st.session_state.current_page == "qna":
             else:
                 st.error("제목과 내용을 모두 입력해 주세요.")
 
-    st.divider()
-    st.subheader("🛠️ 관리자 메뉴 (답변 달기)")
-    if st.toggle("관리자 모드 켜기"):
-        admin_pw = st.text_input("관리자 비밀번호 입력", type="password")
-        if admin_pw == "1234":
-            st.success("관리자 인증 완료! 대기중인 질문에 답변을 달아주세요.")
-            pending_questions = [q for q in st.session_state.qna_list if q['status'] == "대기중"]
-            if not pending_questions:
-                st.write("✅ 현재 답변을 기다리는 질문이 없습니다.")
-            else:
-                for i, q in enumerate(st.session_state.qna_list):
-                    if q['status'] == "대기중":
-                        with st.container():
-                            st.write(f"**질문:** {q['title']}")
-                            answer_text = st.text_area("답변 작성란", key=f"ans_{i}")
-                            if st.button("답변 완료 및 등록", key=f"btn_{i}"):
-                                if answer_text:
-                                    st.session_state.qna_list[i]['answer'] = answer_text
-                                    st.session_state.qna_list[i]['status'] = "답변완료"
-                                    st.rerun()
-        elif admin_pw:
-            st.error("비밀번호가 일치하지 않습니다.")
-
 
 # --- 🗺️ 5. 사이트맵 ---
 elif st.session_state.current_page == "sitemap":
@@ -255,18 +239,24 @@ elif st.session_state.current_page == "sitemap":
     st.info("용인시 건축 조례 전문 해석 AI 플랫폼의 전체 구조와 취급 법규 목록입니다.")
     st.write("")
 
-    architecture_html = """
+    # 로컬 이미지 Base64 인코딩 처리 (제공해주신 파일명 기준)
+    moleg_logo_b64 = get_image_base64("image_ce4981.png")  # 법제처 로고
+    kakao_logo_b64 = get_image_base64("image_ce49c1.png")  # 카카오 로고
+    
+    # HTML 코드 내에 동적(f-string)으로 Base64 이미지 삽입
+    architecture_html = f"""
     <style>
-        .arch-container { background-color: #0b459c; padding: 20px; border-radius: 12px; font-family: 'Malgun Gothic', sans-serif; color: #333; }
-        .arch-title { text-align: center; color: white; font-size: 22px; font-weight: bold; margin-bottom: 20px; }
-        .arch-layer { background-color: white; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .layer-title { text-align: center; font-weight: bold; color: #0b459c; margin-bottom: 10px; font-size: 17px; border-bottom: 2px solid #f0f2f6; padding-bottom: 5px; }
-        .box-row { display: flex; justify-content: space-between; gap: 10px; }
-        .arch-box { flex: 1; background-color: #e6f0fa; border: 1px solid #c1d5ea; border-radius: 6px; padding: 12px; text-align: center; font-size: 13px; font-weight: 600; }
-        .arch-box span { display: block; font-size: 11px; font-weight: normal; color: #555; margin-top: 4px; }
-        .data-source-row { display: flex; justify-content: center; gap: 15px; margin-top: 10px; }
-        .data-source { display: flex; align-items: center; justify-content: center; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 30px; padding: 8px 18px; font-size: 13px; font-weight: bold; color: #495057; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .data-source img { height: 20px; margin-right: 8px; border-radius: 4px; object-fit: contain; }
+        .arch-container {{ background-color: #0b459c; padding: 20px; border-radius: 12px; font-family: 'Malgun Gothic', sans-serif; color: #333; }}
+        .arch-title {{ text-align: center; color: white; font-size: 22px; font-weight: bold; margin-bottom: 20px; }}
+        .arch-layer {{ background-color: white; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
+        .layer-title {{ text-align: center; font-weight: bold; color: #0b459c; margin-bottom: 10px; font-size: 17px; border-bottom: 2px solid #f0f2f6; padding-bottom: 5px; }}
+        .box-row {{ display: flex; justify-content: space-between; gap: 10px; }}
+        .arch-box {{ flex: 1; background-color: #e6f0fa; border: 1px solid #c1d5ea; border-radius: 6px; padding: 12px; text-align: center; font-size: 13px; font-weight: 600; }}
+        .arch-box span {{ display: block; font-size: 11px; font-weight: normal; color: #555; margin-top: 4px; }}
+        .data-source-row {{ display: flex; justify-content: center; gap: 15px; margin-top: 10px; }}
+        .data-source {{ display: flex; align-items: center; justify-content: center; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 30px; padding: 8px 18px; font-size: 13px; font-weight: bold; color: #495057; box-shadow: 0 2px 4px rgba(0,0,0,0.05); gap: 8px; }}
+        .custom-icon {{ width: 20px; height: 20px; object-fit: contain; }}
+        .emoji-icon {{ font-size: 16px; margin-right: 6px; }}
     </style>
 
     <div class="arch-container">
@@ -301,13 +291,13 @@ elif st.session_state.current_page == "sitemap":
             
             <div class="data-source-row">
                 <div class="data-source">
-                    <img src="https://play-lh.googleusercontent.com/vH1Wn055cUDHnO1y69X92xKhyi2W0R2VpP9vB-rX6TzB4n26L_K3g8H2x8Xv4Y4Z0Q" alt="법제처"> 국가법령정보센터
+                    <img class="custom-icon" src="data:image/png;base64,{moleg_logo_b64}" alt="법제처"> 국가법령정보센터
                 </div>
                 <div class="data-source">
-                    <img src="https://play-lh.googleusercontent.com/16BwFz-hAihB1qjDqf6mB7MC5n2iX49x0E_oW0vP83T7k5i64G_X5Hn1G3fTzOQ_aM4" alt="카카오"> 카카오맵 API
+                    <img class="custom-icon" src="data:image/png;base64,{kakao_logo_b64}" alt="카카오맵"> 카카오맵 API
                 </div>
                 <div class="data-source">
-                    <img src="https://cdn-icons-png.flaticon.com/512/2885/2885412.png" alt="DB"> 로컬 히스토리 DB
+                    <span class="emoji-icon">🗄️</span> 로컬 히스토리 DB
                 </div>
             </div>
         </div>
