@@ -299,23 +299,131 @@ elif st.session_state.current_page == "qna":
         elif admin_pw:
             st.error("비밀번호가 일치하지 않습니다.")
 
-# --- 사이트맵 화면 ---
+# --- 사이트맵 화면 (시스템 아키텍처 시각화) ---
 elif st.session_state.current_page == "sitemap":
-    st.title("🗺️ 플랫폼 사이트맵")
-    st.info("현재 웹사이트의 전체 구조를 한눈에 파악할 수 있습니다.")
+    st.title("🗺️ 플랫폼 시스템 아키텍처 및 사이트맵")
+    st.info("현재 구축된 용인시 건축 조례 지원 플랫폼의 전체 시스템 구조도입니다.")
+    st.write("")
+
+    # HTML/CSS를 활용한 아키텍처 구조도 렌더링
+    architecture_html = """
+    <style>
+        .arch-container {
+            background-color: #0b459c;
+            padding: 20px;
+            border-radius: 12px;
+            font-family: 'Malgun Gothic', sans-serif;
+            color: #333;
+        }
+        .arch-title {
+            text-align: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .arch-layer {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .layer-title {
+            text-align: center;
+            font-weight: bold;
+            color: #0b459c;
+            margin-bottom: 10px;
+            font-size: 18px;
+            border-bottom: 2px solid #f0f2f6;
+            padding-bottom: 5px;
+        }
+        .box-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .arch-box {
+            flex: 1;
+            background-color: #e6f0fa;
+            border: 1px solid #c1d5ea;
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .arch-box span {
+            display: block;
+            font-size: 12px;
+            font-weight: normal;
+            color: #555;
+            margin-top: 4px;
+        }
+        .data-source-row {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .data-source {
+            background-color: #f8f9fa;
+            border: 1px dashed #adb5bd;
+            border-radius: 30px;
+            padding: 8px 20px;
+            font-size: 13px;
+            font-weight: bold;
+            color: #495057;
+        }
+    </style>
+
+    <div class="arch-container">
+        <div class="arch-title">건축 법령해석 코파일럿 시스템 구조도</div>
+        
+        <div class="arch-layer">
+            <div class="layer-title">대국민 / 실무자 서비스 (UI)</div>
+            <div class="box-row">
+                <div class="arch-box">🤖 AI 건축 규제 검토<span>(법령 시맨틱 분석 질의응답)</span></div>
+                <div class="arch-box">🗺️ 대지 위치 시각화<span>(카카오 지도 및 건축선 확인)</span></div>
+                <div class="arch-box">📝 민원 양식 생성<span>(행정 서류 자동 완성)</span></div>
+                <div class="arch-box">💡 Q&A 게시판<span>(자주 묻는 질문 및 사용자 커뮤니티)</span></div>
+            </div>
+        </div>
+
+        <div class="arch-layer">
+            <div class="layer-title">AI 및 백엔드 통합 엔진 (Legal Module)</div>
+            <div class="box-row">
+                <div class="arch-box">LLM 분석 엔진<span>(handle_ai_analysis)</span></div>
+                <div class="arch-box">법률 시맨틱 레이어<span>(규제 조항 필터링 및 매핑)</span></div>
+                <div class="arch-box">세션 상태 관리자<span>(대화 이력 및 Q&A 상태 저장)</span></div>
+            </div>
+        </div>
+
+        <div class="arch-layer">
+            <div class="layer-title">외부 시스템 연계 및 DB 구축</div>
+            <div class="box-row">
+                <div class="arch-box">용인시/경기도 자치법규<span>(지역 조례 데이터)</span></div>
+                <div class="arch-box">상위 건축 법령 125개<span>(국가 법령 데이터)</span></div>
+                <div class="arch-box">공간 정보 API 연동<span>(지도 및 주소 데이터)</span></div>
+            </div>
+            
+            <div class="data-source-row">
+                <div class="data-source">⬆️ 국가법령정보센터</div>
+                <div class="data-source">⬆️ 카카오맵 API</div>
+                <div class="data-source">⬆️ 로컬 히스토리 DB</div>
+            </div>
+        </div>
+    </div>
+    """
+    
+    # HTML 코드 렌더링
+    st.markdown(architecture_html, unsafe_allow_html=True)
     st.divider()
     
-    st.markdown("""
-    ### 🏠 메인 화면
-    * **1️⃣ AI 규제 검토 & 지도 시뮬레이션** (AI 심층 분석 및 카카오 지도 연동)
-    * **2️⃣ 민원 양식 생성** (행정 서류 자동 완성 - 준비 중)
-    
-    ### 💡 게시판 및 안내
-    * **Q&A 게시판** (FAQ 및 사용자 질의응답)
-    * **사이트맵** (전체 구조 안내)
-    
-    ### ⚙️ 제어 패널 (사이드바)
-    * 화면 테마 변경 (다크/라이트 모드)
-    * 새로운 분석 시작
-    * 과거 분석 기록 열람 및 삭제
-    """)
+    # 각 블록에 대한 간단한 텍스트 부연 설명 추가
+    with st.expander("👉 각 계층(Layer) 상세 설명 보기"):
+        st.markdown("""
+        * **서비스 레이어 (UI):** 사용자가 직접 마주하는 화면입니다. 사이드바의 버튼이나 상단의 탭을 통해 이동할 수 있는 실제 기능들입니다.
+        * **코어 엔진 레이어:** 사용자의 질문을 분석하고, 법령 데이터와 매칭하여 답변을 생성하는 백엔드 프로세서입니다.
+        * **데이터 및 외부 연계:** AI가 답변을 생성할 때 참고하는 125개의 법령 데이터 베이스와, 지도를 시각화하기 위해 외부에서 끌어오는 카카오 API 등을 의미합니다.
+        """)
