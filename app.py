@@ -305,7 +305,7 @@ elif st.session_state.current_page == "sitemap":
     st.info("용인시 건축 조례 전문 해석 AI 플랫폼의 전체 구조와 취급 법규 목록입니다.")
     st.write("")
 
-    # 1~3번 요청사항 반영된 HTML 구조도
+    # 1. 아키텍처 구조도 (아이콘 이미지 적용)
     architecture_html = """
     <style>
         .arch-container { background-color: #0b459c; padding: 20px; border-radius: 12px; font-family: 'Malgun Gothic', sans-serif; color: #333; }
@@ -316,7 +316,8 @@ elif st.session_state.current_page == "sitemap":
         .arch-box { flex: 1; background-color: #e6f0fa; border: 1px solid #c1d5ea; border-radius: 6px; padding: 12px; text-align: center; font-size: 13px; font-weight: 600; }
         .arch-box span { display: block; font-size: 11px; font-weight: normal; color: #555; margin-top: 4px; }
         .data-source-row { display: flex; justify-content: center; gap: 15px; margin-top: 10px; }
-        .data-source { background-color: #f8f9fa; border: 1px dashed #adb5bd; border-radius: 30px; padding: 6px 15px; font-size: 12px; font-weight: bold; color: #495057; }
+        .data-source { display: flex; align-items: center; justify-content: center; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 30px; padding: 8px 18px; font-size: 13px; font-weight: bold; color: #495057; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .data-source img { height: 18px; margin-right: 8px; object-fit: contain; }
     </style>
 
     <div class="arch-container">
@@ -348,26 +349,44 @@ elif st.session_state.current_page == "sitemap":
                 <div class="arch-box">상위 건축 법령 118개<span>(국가 법령 데이터)</span></div>
                 <div class="arch-box">공간 정보 API 연동<span>(지도 및 주소 데이터)</span></div>
             </div>
+            
             <div class="data-source-row">
-                <div class="data-source">⬆️ 국가법령정보센터</div>
-                <div class="data-source">⬆️ 카카오맵 API</div>
-                <div class="data-source">⬆️ 로컬 히스토리 DB</div>
+                <div class="data-source">
+                    <img src="https://www.law.go.kr/LSW/images/common/logo.png" alt="법제처"> 국가법령정보센터
+                </div>
+                <div class="data-source">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Kakao_logo_%282015%29.svg/1024px-Kakao_logo_%282015%29.svg.png" alt="카카오"> 카카오맵 API
+                </div>
+                <div class="data-source">
+                    <img src="https://cdn-icons-png.flaticon.com/512/2885/2885412.png" alt="DB"> 로컬 히스토리 DB
+                </div>
             </div>
         </div>
     </div>
     """
+    import streamlit.components.v1 as components
     components.html(architecture_html, height=520)
 
     st.divider()
 
-    # 4번 요청사항 반영: 취급 법규 목록 (깔끔한 디자인의 테이블)
+    # 2. 취급 법규 목록 표시
+    import pandas as pd
+    import numpy as np
+
+    # 리스트를 N개의 열(Column)로 변환해주는 헬퍼 함수
+    def make_grid_df(items, cols=3):
+        padded_items = items + [""] * ((cols - len(items) % cols) % cols)
+        grid = np.array(padded_items).reshape(-1, cols)
+        # 테이블 헤더를 깔끔하게 빈칸 처리
+        return pd.DataFrame(grid, columns=[""] * cols)
+
     with st.expander("📚 취급 법규 목록 (조례 및 상위 법령)", expanded=True):
         st.write("플랫폼이 분석 가능한 전체 법규 목록입니다. 탭을 클릭하여 종류별로 확인하세요.")
         
-        l_tabs = st.tabs(["🏛️ 자치단체 조례", "📜 상위 법령", "🔗 조례 위임 법규", "📂 상위법 위임 법규"])
+        l_tabs = st.tabs(["🏛️ 자치단체 조례", "📜 상위 법령", "🔗 조례 위임 법규 (44개)", "📂 상위법 위임 법규 (61개)"])
 
         with l_tabs[0]:
-            st.markdown("### 🏛️ 경기도 및 용인시 조례")
+            st.markdown("### 🏛️ 경기도 및 용인시 조례 (7개)")
             data_ordinance = [
                 ["경기도", "경기도 건축 조례", "건축법"],
                 ["경기도", "경기도 건축기본조례", "건축기본법"],
@@ -377,36 +396,55 @@ elif st.session_state.current_page == "sitemap":
                 ["용인시", "용인시 건축물관리 조례", "건축물관리법"],
                 ["용인시", "용인시 도시계획 조례", "국토의 계획 및 이용에 관한 법률"]
             ]
-            import pandas as pd
             df_ord = pd.DataFrame(data_ordinance, columns=["지자체명", "조례명", "위임 법률"])
-            st.table(df_ord)
+            st.dataframe(df_ord, hide_index=True, use_container_width=True)
 
         with l_tabs[1]:
-            st.markdown("### 📜 주요 상위 법령 (15개 핵심 법률)")
+            st.markdown("### 📜 주요 상위 법령 (15개 핵심 법률 외 103개)")
             laws = [
                 "건축법 / 시행령 / 시행규칙", "건축기본법 / 시행령", "문화예술진흥법 / 시행령",
                 "건축물관리법 / 시행령 / 시행규칙", "국토의 계획 및 이용에 관한 법률 / 시행령 / 시행규칙"
             ]
             for law in laws:
-                st.write(f"- {law}")
+                st.write(f"✔️ {law}")
 
         with l_tabs[2]:
-            st.markdown("### 🔗 조례에서 위임된 하위 법규")
+            st.markdown("### 🔗 조례에서 위임된 하위 법규 (총 44개)")
             sub_laws_1 = [
-                "공동주택관리법", "경관법 시행령", "도시 및 주거환경정비법", "전통시장법 시행령",
-                "녹색건축물 조성 지원법", "주택법 시행령", "한옥 등 건축자산의 보존에 관한 법률"
+                "감정평가 및 감정평가사에 관한 법률", "건설기술진흥법", "건축기본법", "건축기본법 시행령", "건축물관리법", 
+                "건축물관리법 시행규칙", "건축물관리법 시행령", "건축법", "건축법 시행규칙", "건축법 시행령", "건축사법", 
+                "경기도 건축물 미술작품 설치 및 관리에 관한 조례 시행규칙", "경기도 위원회 수당 및 여비 지급 조례", 
+                "경기도 지방보조금 관리 조례", "고등교육법", "공공발주사업에 대한 건축사의 업무범위와 대가기준", 
+                "공공주택 특별법", "관광진흥법", "국가유산기본법", "국토의 계획 및 이용에 관한 법률", 
+                "국토의 계획 및 이용에 관한 법률 시행규칙", "국토의 계획 및 이용에 관한 법률 시행령", 
+                "근현대문화유산의 보존 및 활용에 관한 법률", "녹색건축물 조성 지원법", "농지법", "농지법 시행령", 
+                "다중이용업소의 안전관리에 관한 특별법 시행령", "대기환경보전법", "도시 및 주거환경정비법", 
+                "문화예술진흥법", "문화예술진흥법 시행령", "민간임대주택에 관한 특별법", "민원 처리에 관한 법률 시행령", 
+                "산업입지 및 개발에 관한 법률", "산업집적활성화 및 공장설립에 관한 법률", "산지관리법", "실내공기질 관리법", 
+                "용인시 각종 위원회 설치 및 운영 조례", "용인시 건축 조례", "용인시 도시계획 조례", "자연공원법", 
+                "전통사찰의 보존 및 지원에 관한 법률", "주택법", "한옥 등 건축자산의 진흥에 관한 법률"
             ]
-            st.info(", ".join(sub_laws_1))
-            st.caption("※ 외 다수의 조례 위임 법규 포함")
+            # 3개의 열을 가진 데이터프레임으로 깔끔하게 렌더링
+            st.dataframe(make_grid_df(sub_laws_1, 3), hide_index=True, use_container_width=True)
 
         with l_tabs[3]:
-            st.markdown("### 📂 상위법 위임 및 연계 법규 (대표 목록)")
+            st.markdown("### 📂 상위법 위임 및 연계 법규 (총 61개)")
             sub_laws_2 = [
-                "주차장법", "소방시설법", "전기통신사업법", "수도법", "하수도법", "고압가스 안전관리법",
-                "장애인/노인/임산부 등의 편의증진 보장에 관한 법률", "다중이용업소의 안전관리에 관한 특별법"
+                "건설기술 진흥법", "건설기술 진흥법 시행령", "건설산업기본법", "건축기본법", "건축법", "건축법 시행령", 
+                "건축사법", "경관법", "고등교육법", "공간정보의 구축 및 관리 등에 관한 법률", "공공기관의 운영에 관한 법률", 
+                "공공주택 특별법", "공동주택관리법", "공유재산 및 물품 관리법", "공익사업을 위한 토지 등의 취득 및 보상에 관한 법률", 
+                "관광진흥법", "국가기술자격법", "국가유산기본법", "국유재산법", "국토안전관리원법", "국토의 계획 및 이용에 관한 법률", 
+                "국토의 계획 및 이용에 관한 법률 시행령", "기술사법", "녹색건축물 조성 지원법", "농어촌정비법", "농지법", "도로법", 
+                "도시 및 주거환경정비법", "도시개발법", "도시공원 및 녹지 등에 관한 법률", "도시교통정비 촉진법", 
+                "도시재생 활성화 및 지원에 관한 특별법", "문화예술진흥법", "문화유산의 보존 및 활용에 관한 법률", "민법", 
+                "빈집 및 소규모주택 정비에 관한 특례법", "사도법", "산림자원의 조성 및 관리에 관한 법률", "산업입지 및 개발에 관한 법률", 
+                "산업집적활성화 및 공장설립에 관한 법률", "산지관리법", "소방시설 설치 및 관리에 관한 법률", "수도권정비계획법", 
+                "수도법", "수산자원관리법 시행령", "시설물의 안전 및 유지관리에 관한 특별법", "영유아보육법", "자연공원법", 
+                "자연유산의 보존 및 활용에 관한 법률", "자연재해대책법", "전자정부법", "주차장법", "주택법", "지방공기업법", 
+                "집합건물의 소유 및 관리에 관한 법률", "택지개발촉진법", "토지이용규제 기본법", "하수도법", "하천법", 
+                "한국토지주택공사법", "행정대집행법"
             ]
-            # 컬럼으로 나누어 깔끔하게 표시
-            c1, c2 = st.columns(2)
-            for i, sl in enumerate(sub_laws_2):
+            # 3개의 열을 가진 데이터프레임으로 깔끔하게 렌더링
+            st.dataframe(make_grid_df(sub_laws_2, 3), hide_index=True, use_container_width=True)
                 if i % 2 == 0: c1.write(f"• {sl}")
                 else: c2.write(f"• {sl}")
