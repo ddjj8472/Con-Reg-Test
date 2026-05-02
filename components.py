@@ -35,4 +35,4 @@ def render_ai_report(response_text):
     </div>
     """
 
-    st.markdown(textwrap.dedent(html_block), unsafe_allow_html=True)
+    st.markdown(textwrap.dedent(html_block).strip(), unsafe_allow_html=True)
