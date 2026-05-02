@@ -230,9 +230,11 @@ elif st.session_state.current_page == "sitemap":
     st.info("용인시 건축 조례 전문 해석 AI 플랫폼의 전체 구조와 취급 법규 목록입니다.")
     st.write("")
 
-    # 절대 깨지지 않는 위키미디어 및 공식 앱스토어 로고 URL
-    moleg_logo_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Logo_of_the_Ministry_of_Government_Legislation_%28South_Korea%29.svg/320px-Logo_of_the_Ministry_of_Government_Legislation_%28South_Korea%29.svg.png"
-    kakao_logo_url = "https://play-lh.googleusercontent.com/jG_2s60x9P-Z5M4g-lQy33qL9S0GylqX1_yHj9oY_aY5b1P8T2lK8g8K7jO_M_Y6_g=w240-h240-rw"
+    # 🚨 [수정 완료] 보안 차단이 없는 정부/카카오 공식 CDN 다이렉트 URL
+    # 대한민국 정부 포털 공식 로고 (법제처 대용)
+    moleg_logo_url = "https://www.korea.kr/img/header/logo.png"
+    # 카카오맵 공식 API 서버 로고
+    kakao_logo_url = "https://t1.daumcdn.net/mapjsapi/images/2x/ico_logo.png"
     
     architecture_html = f"""
     <style>
@@ -245,7 +247,10 @@ elif st.session_state.current_page == "sitemap":
         .arch-box span {{ display: block; font-size: 11px; font-weight: normal; color: #555; margin-top: 4px; }}
         .data-source-row {{ display: flex; justify-content: center; gap: 15px; margin-top: 10px; }}
         .data-source {{ display: flex; align-items: center; justify-content: center; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 30px; padding: 8px 18px; font-size: 13px; font-weight: bold; color: #495057; box-shadow: 0 2px 4px rgba(0,0,0,0.05); gap: 8px; }}
-        .custom-icon {{ width: 22px; height: 22px; object-fit: contain; margin-right: 2px; border-radius: 4px; }}
+        
+        /* 🚨 이미지 크기 및 배경을 로고 형태에 맞게 조정 */
+        .custom-icon {{ height: 20px; object-fit: contain; margin-right: 4px; }}
+        .kakao-icon {{ height: 20px; object-fit: contain; margin-right: 4px; background-color: #fae100; border-radius: 4px; padding: 2px; }}
         .emoji-icon {{ font-size: 18px; margin-right: 4px; }}
     </style>
 
@@ -284,10 +289,10 @@ elif st.session_state.current_page == "sitemap":
                     <img class="custom-icon" src="{moleg_logo_url}" alt="법제처"> 국가법령정보센터
                 </div>
                 <div class="data-source">
-                    <img class="custom-icon" src="{kakao_logo_url}" alt="카카오맵"> 카카오맵 API
+                    <img class="kakao-icon" src="{kakao_logo_url}" alt="카카오맵"> 카카오맵 API
                 </div>
                 <div class="data-source">
-                    <span class="emoji-icon">🗄️</span> 로컬 히스토리 DB
+                    <span class="emoji-icon">🗄️</span> 로컬 DB
                 </div>
             </div>
         </div>
