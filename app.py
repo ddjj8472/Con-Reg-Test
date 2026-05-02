@@ -39,7 +39,7 @@ if "qna_list" not in st.session_state:
 # 3. 스타일 적용
 apply_custom_style(st.session_state.dark_mode)
 
-# 🚨 [신규 추가] 다크모드 시 흰색 텍스트/흰색 배경 겹침 현상(안보임) 해결을 위한 CSS 패치
+# 🚨 [신규 추가] 다크모드 시 흰색 텍스트/흰색 배경 겹침 현상 및 버튼 글씨 안보임 해결을 위한 CSS 패치
 if st.session_state.dark_mode:
     st.markdown("""
     <style>
@@ -58,6 +58,23 @@ if st.session_state.dark_mode:
             color: #ffffff !important;
             -webkit-text-fill-color: #ffffff !important;
         }
+        
+        /* 🚨 추가: 다크모드 폼 제출 버튼 및 일반 버튼 가시성 확보 */
+        div[data-testid="stFormSubmitButton"] button, 
+        div[data-testid="stButton"] button {
+            background-color: #333333 !important;
+            color: #ffffff !important;
+            border: 1px solid #555555 !important;
+        }
+        div[data-testid="stFormSubmitButton"] button p, 
+        div[data-testid="stButton"] button p {
+            color: #ffffff !important;
+        }
+        div[data-testid="stFormSubmitButton"] button:hover, 
+        div[data-testid="stButton"] button:hover {
+            background-color: #444444 !important;
+            border: 1px solid #ffffff !important;
+        }
     </style>
     """, unsafe_allow_html=True)
 else:
@@ -67,6 +84,11 @@ else:
         div[data-testid="stExpander"] details summary p, input, textarea {
             color: #000000 !important;
             -webkit-text-fill-color: #000000 !important;
+        }
+        /* 라이트모드 버튼 강제 지정 (다크모드 토글 대비) */
+        div[data-testid="stFormSubmitButton"] button p, 
+        div[data-testid="stButton"] button p {
+            color: #000000 !important;
         }
     </style>
     """, unsafe_allow_html=True)
