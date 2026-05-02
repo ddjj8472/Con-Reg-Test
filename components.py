@@ -16,4 +16,14 @@ def render_ai_report(response_text):
         )
 
     formatted_text = response_text.replace("\n", "<br>")
-    st.markdown(f'<div class="report-card">{formatted_text}</div>', unsafe_allow_html=True)
+    box_id = f"copy_{uuid.uuid4().hex}"
+
+    st.markdown(f"""
+    <div class="report-wrapper">
+        <button class="copy-btn"
+            onclick="navigator.clipboard.writeText(document.getElementById('{box_id}').innerText)"
+            title="답변 복사">📋</button>
+
+        <div id="{box_id}" class="report-card">{formatted_text}</div>
+    </div>
+    """, unsafe_allow_html=True)
