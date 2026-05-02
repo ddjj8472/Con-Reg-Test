@@ -5,14 +5,21 @@ import traceback
 import streamlit.components.v1 as components 
 import pandas as pd
 import numpy as np
-import os
 import base64
+import os
 
 # [구조 분리] 백엔드 통합 프로세서
 from processor import handle_ai_analysis 
 from style import apply_custom_style
 from components import render_user_message, render_ai_report
 from storage import load_history, save_history 
+
+# --- [로컬 이미지 변환 함수] 이미지가 깨지지 않도록 Base64로 인코딩 ---
+def get_image_base64(image_path):
+    if os.path.exists(image_path):
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    return ""
 
 # 1. 페이지 설정 (최상단)
 st.set_page_config(page_title="용인시 건축 조례 지원 플랫폼", layout="wide")
@@ -31,6 +38,38 @@ if "qna_list" not in st.session_state:
 
 # 3. 스타일 적용
 apply_custom_style(st.session_state.dark_mode)
+
+# 🚨 [신규 추가] 다크모드 시 흰색 텍스트/흰색 배경 겹침 현상(안보임) 해결을 위한 CSS 패치
+if st.session_state.dark_mode:
+    st.markdown("""
+    <style>
+        /* 다크모드: 아코디언(Expander) 및 입력창 배경을 어둡게, 글자는 하얗게 강제 지정 */
+        div[data-testid="stExpander"] details summary {
+            background-color: #262730 !important;
+            color: #ffffff !important;
+        }
+        div[data-testid="stExpander"] details summary p {
+            color: #ffffff !important;
+        }
+        div[data-baseweb="input"] > div, div[data-baseweb="textarea"] > div {
+            background-color: #262730 !important;
+        }
+        input, textarea {
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+else:
+    st.markdown("""
+    <style>
+        /* 라이트모드: 정상적인 검은색 글자 강제 지정 */
+        div[data-testid="stExpander"] details summary p, input, textarea {
+            color: #000000 !important;
+            -webkit-text-fill-color: #000000 !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
 
 # 4. 사이드바 구성
 with st.sidebar:
@@ -80,7 +119,7 @@ with st.sidebar:
                 st.session_state.current_page = "main"
                 st.rerun()
     else:
-        st.caption("저장된 분석 기록이 영구 보관됩니다.")
+        st.caption("저장된 분석 기록이 없습니다.")
 
     st.divider()
     if st.button("🗑️ 전체 기록 삭제"):
@@ -187,7 +226,7 @@ elif st.session_state.current_page == "map":
         components.html(map_html, height=670)
 
 
-# --- 💡 4. Q&A 게시판 ---
+# --- 💡 4. Q&A 게시판 (관리자 기능 복구) ---
 elif st.session_state.current_page == "qna":
     st.title("💡 자주 묻는 질문 (FAQ) 및 Q&A")
     st.write("플랫폼 사용법 및 건축 법령 해석과 관련된 질문을 확인하고 남길 수 있습니다.")
@@ -225,22 +264,39 @@ elif st.session_state.current_page == "qna":
             else:
                 st.error("제목과 내용을 모두 입력해 주세요.")
 
+    st.divider()
+    
+    # 🚨 [복구된 부분] 관리자 메뉴 (답변 달기 기능)
+    st.subheader("🛠️ 관리자 메뉴 (답변 달기)")
+    if st.toggle("관리자 모드 켜기"):
+        admin_pw = st.text_input("관리자 비밀번호 입력", type="password")
+        if admin_pw == "2026":
+            st.success("관리자 인증 완료! 대기중인 질문에 답변을 달아주세요.")
+            pending_questions = [q for q in st.session_state.qna_list if q['status'] == "대기중"]
+            if not pending_questions:
+                st.write("✅ 현재 답변을 기다리는 질문이 없습니다.")
+            else:
+                for i, q in enumerate(st.session_state.qna_list):
+                    if q['status'] == "대기중":
+                        with st.container():
+                            st.write(f"**질문:** {q['title']}")
+                            answer_text = st.text_area("답변 작성란", key=f"ans_{i}")
+                            if st.button("답변 완료 및 등록", key=f"btn_{i}"):
+                                if answer_text:
+                                    st.session_state.qna_list[i]['answer'] = answer_text
+                                    st.session_state.qna_list[i]['status'] = "답변완료"
+                                    st.rerun()
+                                else:
+                                    st.warning("답변 내용을 입력해주세요.")
+        elif admin_pw:
+            st.error("비밀번호가 일치하지 않습니다.")
+
 
 # --- 🗺️ 5. 사이트맵 (로컬 이미지 Base64 인코딩 적용) ---
 elif st.session_state.current_page == "sitemap":
     st.title("🗺️ 플랫폼 시스템 아키텍처 및 사이트맵")
     st.info("용인시 건축 조례 전문 해석 AI 플랫폼의 전체 구조와 취급 법규 목록입니다.")
     st.write("")
-
-    import base64
-    import os
-
-    # 🚨 [수정 완료] 로컬 이미지를 Base64 텍스트로 변환하는 함수
-    def get_image_base64(image_path):
-        if os.path.exists(image_path):
-            with open(image_path, "rb") as img_file:
-                return base64.b64encode(img_file.read()).decode()
-        return "" # 파일이 없으면 빈 문자열 반환
 
     # 로컬 이미지 경로 지정 (app.py 기준 상대 경로)
     moleg_path = "images/moleg_logo.png" 
@@ -251,7 +307,6 @@ elif st.session_state.current_page == "sitemap":
     kakao_base64 = get_image_base64(kakao_path)
 
     # HTML에 주입할 데이터 URI 생성
-    # (이미지가 없더라도 엑스박스 대신 빈 공간으로 처리하기 위해 분기 처리)
     moleg_src = f"data:image/png;base64,{moleg_base64}" if moleg_base64 else ""
     kakao_src = f"data:image/png;base64,{kakao_base64}" if kakao_base64 else ""
     
