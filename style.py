@@ -59,5 +59,19 @@ def apply_custom_style(is_dark: bool):
         caret-color: {c['txt']} !important;
     }}
     [data-testid="stChatInput"] svg {{ fill: {c['txt']} !important; }}
+
+    /* 답변 카드 오른쪽 위 복사 버튼 */
+    .report-wrapper {{ position: relative; }}
+    .report-wrapper .report-card {{ padding-right: 55px !important; }}
+
+    .copy-btn {{
+        position: absolute; top: 10px; right: 10px; z-index: 10;
+        border: 1px solid {c['btn_bd']}; background: {c['btn_bg']}; color: {c['txt']};
+        border-radius: 8px; padding: 4px 7px; cursor: pointer;
+        font-size: 14px; opacity: 0.75;
+    }}
+
+    .copy-btn:hover {{ opacity: 1; transform: scale(1.05); }}
+    
     </style>
     """, unsafe_allow_html=True)
