@@ -3,10 +3,13 @@ import re
 import uuid
 
 def render_user_message(query):
-    st.markdown(f'<div class="user-msg">질문: {query}</div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="user-msg">질문: {query}</div>',
+        unsafe_allow_html=True
+    )
 
 def render_ai_report(response_text):
-    #6가지 항목 구성(존재할시)볼드체로 표시
+    # 6가지 항목 구성(존재할시) 볼드체로 표시
     titles = ["결론", "적용 지역", "핵심 근거", "세부 해석", "원문 링크", "담당 기관"]
 
     for title in titles:
@@ -19,7 +22,7 @@ def render_ai_report(response_text):
     formatted_text = response_text.replace("\n", "<br>")
     box_id = f"copy_{uuid.uuid4().hex}"
 
-  st.markdown(f"""
+    st.markdown(f"""
 <div class="report-wrapper">
     <button class="copy-btn"
         onclick="navigator.clipboard.writeText(document.getElementById('{box_id}').innerText)"
