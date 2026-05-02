@@ -23,7 +23,7 @@ def render_ai_report(response_text):
     <div class="report-wrapper">
         <button class="copy-btn"
             onclick="navigator.clipboard.writeText(document.getElementById('{box_id}').innerText)"
-            title="답변 복사">📋</button>
+            title="답변 복사">📋 복사TEST</button>
 
         <div id="{box_id}" class="report-card">{formatted_text}</div>
     </div>
