@@ -5,6 +5,8 @@ import traceback
 import streamlit.components.v1 as components 
 import pandas as pd
 import numpy as np
+import os
+import base64
 
 # [구조 분리] 백엔드 통합 프로세서
 from processor import handle_ai_analysis 
@@ -224,17 +226,34 @@ elif st.session_state.current_page == "qna":
                 st.error("제목과 내용을 모두 입력해 주세요.")
 
 
-# --- 🗺️ 5. 사이트맵 (공식 로고 외부 링크 적용) ---
+# --- 🗺️ 5. 사이트맵 (로컬 이미지 Base64 인코딩 적용) ---
 elif st.session_state.current_page == "sitemap":
     st.title("🗺️ 플랫폼 시스템 아키텍처 및 사이트맵")
     st.info("용인시 건축 조례 전문 해석 AI 플랫폼의 전체 구조와 취급 법규 목록입니다.")
     st.write("")
 
-    # 🚨 [수정 완료] 보안 차단이 없는 정부/카카오 공식 CDN 다이렉트 URL
-    # 대한민국 정부 포털 공식 로고 (법제처 대용)
-    moleg_logo_url = "https://www.korea.kr/img/header/logo.png"
-    # 카카오맵 공식 API 서버 로고
-    kakao_logo_url = "https://t1.daumcdn.net/mapjsapi/images/2x/ico_logo.png"
+    import base64
+    import os
+
+    # 🚨 [수정 완료] 로컬 이미지를 Base64 텍스트로 변환하는 함수
+    def get_image_base64(image_path):
+        if os.path.exists(image_path):
+            with open(image_path, "rb") as img_file:
+                return base64.b64encode(img_file.read()).decode()
+        return "" # 파일이 없으면 빈 문자열 반환
+
+    # 로컬 이미지 경로 지정 (app.py 기준 상대 경로)
+    moleg_path = "images/moleg_logo.png" 
+    kakao_path = "images/kakao_logo.png"
+
+    # 이미지 파일을 Base64 문자열로 변환
+    moleg_base64 = get_image_base64(moleg_path)
+    kakao_base64 = get_image_base64(kakao_path)
+
+    # HTML에 주입할 데이터 URI 생성
+    # (이미지가 없더라도 엑스박스 대신 빈 공간으로 처리하기 위해 분기 처리)
+    moleg_src = f"data:image/png;base64,{moleg_base64}" if moleg_base64 else ""
+    kakao_src = f"data:image/png;base64,{kakao_base64}" if kakao_base64 else ""
     
     architecture_html = f"""
     <style>
@@ -248,7 +267,6 @@ elif st.session_state.current_page == "sitemap":
         .data-source-row {{ display: flex; justify-content: center; gap: 15px; margin-top: 10px; }}
         .data-source {{ display: flex; align-items: center; justify-content: center; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 30px; padding: 8px 18px; font-size: 13px; font-weight: bold; color: #495057; box-shadow: 0 2px 4px rgba(0,0,0,0.05); gap: 8px; }}
         
-        /* 🚨 이미지 크기 및 배경을 로고 형태에 맞게 조정 */
         .custom-icon {{ height: 20px; object-fit: contain; margin-right: 4px; }}
         .kakao-icon {{ height: 20px; object-fit: contain; margin-right: 4px; background-color: #fae100; border-radius: 4px; padding: 2px; }}
         .emoji-icon {{ font-size: 18px; margin-right: 4px; }}
@@ -286,10 +304,10 @@ elif st.session_state.current_page == "sitemap":
             
             <div class="data-source-row">
                 <div class="data-source">
-                    <img class="custom-icon" src="{moleg_logo_url}" alt="법제처"> 국가법령정보센터
+                    <img class="custom-icon" src="{moleg_src}" alt="법제처" onerror="this.style.display='none'"> 국가법령정보센터
                 </div>
                 <div class="data-source">
-                    <img class="kakao-icon" src="{kakao_logo_url}" alt="카카오맵"> 카카오맵 API
+                    <img class="kakao-icon" src="{kakao_src}" alt="카카오맵" onerror="this.style.display='none'"> 카카오맵 API
                 </div>
                 <div class="data-source">
                     <span class="emoji-icon">🗄️</span> 로컬 DB
