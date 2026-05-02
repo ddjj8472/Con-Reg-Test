@@ -35,12 +35,16 @@ with st.sidebar:
     st.title("⚙️ 플랫폼 제어")
     
     st.subheader("📌 메뉴")
-    # [요청사항 반영] 1, 2 숫자 제거 및 메인화면에 챗봇 기능 통합
+    
+    # [요청사항 반영] 지도 기능을 3번째 메뉴로 추가 & 번호 없음
     if st.button("🏠 메인화면 (챗봇)", use_container_width=True):
         st.session_state.current_page = "main"
         st.rerun()
     if st.button("📝 민원 양식 생성", use_container_width=True):
         st.session_state.current_page = "doc_gen"
+        st.rerun()
+    if st.button("🗺️ 대지 위치 시각화", use_container_width=True):
+        st.session_state.current_page = "map"
         st.rerun()
     if st.button("💡 Q&A 게시판", use_container_width=True):
         st.session_state.current_page = "qna"
@@ -90,7 +94,7 @@ with st.sidebar:
 # 5. 화면 분기 처리
 # ==========================================
 
-# --- 🏠 1. 메인화면 (소개 + 챗봇 + 지도 통합) ---
+# --- 🏠 1. 메인화면 (소개 + 챗봇 단독) ---
 if st.session_state.current_page == "main":
     st.write("시스템 상태: 🟢 엔진 정상 가동 중")
     st.title("🏢 건축 조례 및 법령 해석 지원 플랫폼")
@@ -102,75 +106,42 @@ if st.session_state.current_page == "main":
         """)
     st.write("") 
 
-    # 챗봇 및 지도 레이아웃
-    col_chat, col_map = st.columns([1, 1], gap="large")
+    st.subheader("🤖 법규 규제 검토 및 질의응답 (챗봇)")
+    
+    # 챗봇을 넓은 화면으로 사용
+    chat_box = st.container(height=550, border=False)
     user_query = st.chat_input("분석이 필요한 건축 규제를 입력해 주세요")
     
-    with col_chat:
-        st.subheader("🤖 법규 규제 검토 및 질의응답 (챗봇)")
-        chat_box = st.container(height=520, border=False)
-        
-        with chat_box:
-            if st.session_state.selected_index is not None:
-                idx = st.session_state.selected_index
-                selected_chat = st.session_state.chat_history[idx]
-                st.success(f"📅 과거 분석 기록 열람 중 (조회 일시: {selected_chat.get('time', '')})")
-                render_user_message(selected_chat["query"])
-                render_ai_report(selected_chat["response"])
-                
-                if st.button("닫기 및 새 질문하기", use_container_width=True):
-                    st.session_state.selected_index = None
-                    st.rerun()
-            else:
-                for chat in st.session_state.chat_history:
-                    render_user_message(chat["query"])
-                    render_ai_report(chat["response"])
-
-            if user_query:
-                render_user_message(user_query)
-                with st.status("🔍 심층 분석 진행 중...", expanded=True) as status:
-                    try:
-                        st.write("🛰️ 법률 시맨틱 레이어 및 통합 엔진 가동 중...")
-                        response_text = handle_ai_analysis(user_query)
-                        status.update(label="✅ 분석 완료", state="complete")
-                        render_ai_report(response_text)
-                    except Exception as e:
-                        status.update(label="❌ 시스템 에러 발생", state="error")
-                        st.error(f"오류가 발생했습니다: {str(e)}")
-                        with st.expander("상세 에러 내용"):
-                            st.code(traceback.format_exc())
+    with chat_box:
+        if st.session_state.selected_index is not None:
+            idx = st.session_state.selected_index
+            selected_chat = st.session_state.chat_history[idx]
+            st.success(f"📅 과거 분석 기록 열람 중 (조회 일시: {selected_chat.get('time', '')})")
+            render_user_message(selected_chat["query"])
+            render_ai_report(selected_chat["response"])
+            
+            if st.button("닫기 및 새 질문하기", use_container_width=True):
+                st.session_state.selected_index = None
                 st.rerun()
-
-    with col_map:
-        st.subheader("🗺️ 대지 위치 및 건축선 시각화")
-        KAKAO_JS_KEY = "본인의_카카오_자바스크립트_앱_키를_여기에_붙여넣으세요"
-        map_html = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <style>
-                #map {{ width: 100%; height: 570px; border-radius: 12px; border: 1px solid #eaeaea; }}
-            </style>
-        </head>
-        <body>
-            <div id="map"></div>
-            <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey={KAKAO_JS_KEY}"></script>
-            <script>
-                var mapContainer = document.getElementById('map'); 
-                var mapOption = {{ center: new kakao.maps.LatLng(37.241086, 127.177553), level: 4 }};
-                var map = new kakao.maps.Map(mapContainer, mapOption);
-                map.addControl(new kakao.maps.MapTypeControl(), kakao.maps.ControlPosition.TOPRIGHT);
-                map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
-                map.addOverlayMapTypeId(kakao.maps.MapTypeId.USE_DISTRICT);
-            </script>
-        </body>
-        </html>
-        """
-        if KAKAO_JS_KEY == "본인의_카카오_자바스크립트_앱_키를_여기에_붙여넣으세요":
-            st.warning("🚧 카카오 JavaScript API 키를 코드에 입력해 주세요.")
         else:
-            components.html(map_html, height=590)
+            for chat in st.session_state.chat_history:
+                render_user_message(chat["query"])
+                render_ai_report(chat["response"])
+
+        if user_query:
+            render_user_message(user_query)
+            with st.status("🔍 심층 분석 진행 중...", expanded=True) as status:
+                try:
+                    st.write("🛰️ 법률 시맨틱 레이어 및 통합 엔진 가동 중...")
+                    response_text = handle_ai_analysis(user_query)
+                    status.update(label="✅ 분석 완료", state="complete")
+                    render_ai_report(response_text)
+                except Exception as e:
+                    status.update(label="❌ 시스템 에러 발생", state="error")
+                    st.error(f"오류가 발생했습니다: {str(e)}")
+                    with st.expander("상세 에러 내용"):
+                        st.code(traceback.format_exc())
+            st.rerun()
 
 
 # --- 📝 2. 민원 양식 생성 ---
@@ -180,7 +151,43 @@ elif st.session_state.current_page == "doc_gen":
     st.warning("🚧 행정 민원 지원 기능 준비 중")
 
 
-# --- 💡 3. Q&A 게시판 ---
+# --- 🗺️ 3. 대지 위치 시각화 (독립된 지도 페이지) ---
+elif st.session_state.current_page == "map":
+    st.title("🗺️ 대지 위치 및 건축선 시각화")
+    st.write("카카오 지도를 통해 대지 위치 및 주변 환경을 확인합니다.")
+    st.write("")
+    
+    KAKAO_JS_KEY = "본인의_카카오_자바스크립트_앱_키를_여기에_붙여넣으세요"
+    map_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            #map {{ width: 100%; height: 650px; border-radius: 12px; border: 1px solid #eaeaea; }}
+        </style>
+    </head>
+    <body>
+        <div id="map"></div>
+        <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey={KAKAO_JS_KEY}"></script>
+        <script>
+            var mapContainer = document.getElementById('map'); 
+            var mapOption = {{ center: new kakao.maps.LatLng(37.241086, 127.177553), level: 4 }};
+            var map = new kakao.maps.Map(mapContainer, mapOption);
+            map.addControl(new kakao.maps.MapTypeControl(), kakao.maps.ControlPosition.TOPRIGHT);
+            map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
+            map.addOverlayMapTypeId(kakao.maps.MapTypeId.USE_DISTRICT);
+        </script>
+    </body>
+    </html>
+    """
+    if KAKAO_JS_KEY == "본인의_카카오_자바스크립트_앱_키를_여기에_붙여넣으세요":
+        st.warning("🚧 카카오 JavaScript API 키를 코드에 입력해 주세요.")
+    else:
+        components.html(map_html, height=670)
+
+
+# --- 💡 4. Q&A 게시판 ---
 elif st.session_state.current_page == "qna":
     st.title("💡 자주 묻는 질문 (FAQ) 및 Q&A")
     st.write("플랫폼 사용법 및 건축 법령 해석과 관련된 질문을 확인하고 남길 수 있습니다.")
@@ -242,7 +249,7 @@ elif st.session_state.current_page == "qna":
             st.error("비밀번호가 일치하지 않습니다.")
 
 
-# --- 🗺️ 4. 사이트맵 ---
+# --- 🗺️ 5. 사이트맵 ---
 elif st.session_state.current_page == "sitemap":
     st.title("🗺️ 플랫폼 시스템 아키텍처 및 사이트맵")
     st.info("용인시 건축 조례 전문 해석 AI 플랫폼의 전체 구조와 취급 법규 목록입니다.")
