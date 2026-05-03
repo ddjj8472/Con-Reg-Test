@@ -138,9 +138,9 @@ with st.sidebar:
     if st.session_state.chat_history:
         for i, chat in enumerate(reversed(st.session_state.chat_history)):
             actual_index = len(st.session_state.chat_history) - 1 - i
-            time_str = chat.get('time', '00:00:00')[11:16]
+            time_str = chat.get("updated_at", chat.get("created_at", "00:00:00"))[11:16]
             
-            query_summary = chat['query']
+            query_summary = chat.get("title", "새 대화")
             if len(query_summary) > 12:
                 query_summary = query_summary[:12] + "..."
             
