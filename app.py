@@ -197,9 +197,7 @@ if st.session_state.current_page == "main":
                 st.session_state.selected_index = None
                 st.rerun()
         else:
-            for chat in st.session_state.chat_history:
-                render_user_message(chat["query"])
-                render_ai_report(chat["response"])
+            st.info("새 대화를 시작하려면 아래 입력창에 질문을 입력하세요.")
 
         if user_query:
             render_user_message(user_query)
