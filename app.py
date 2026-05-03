@@ -127,7 +127,7 @@ with st.sidebar:
 )
     
     st.divider()
-    if st.button("➕ 새 대화 시작", use_container_width=True, type="primary"):
+    if st.button("➕ 새 대화 시작", use_container_width=True):
         st.session_state.selected_index = None
         st.session_state.current_page = "main"
         st.rerun()
