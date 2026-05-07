@@ -219,15 +219,12 @@ if st.session_state.current_page == "main":
             st.rerun()
 
 
-# --- 📝 2. 민원 양식 생성 ---
-elif st.session_state.current_page == "doc_gen":
-    st.title("📝 민원 양식 생성")
-    st.write("")
-    # --- 📝 2. 민원 양식 생성 (상세 구현) ---
+# --- 📝 2. 민원 양식 생성 (통합 및 오류 수정) ---
 elif st.session_state.current_page == "doc_gen":
     st.title("📝 민원 양식 생성 및 접수 안내")
     st.info("용인시 건축 관련 민원 접수를 위한 가이드와 양식 생성을 지원합니다.")
 
+    # 탭 구성
     tabs = st.tabs(["📋 접수 방법", "📄 양식 생성/서류", "🔍 결과 확인"])
 
     # --- Tab 1: 접수 방법 안내 ---
@@ -260,47 +257,49 @@ elif st.session_state.current_page == "doc_gen":
         st.write("---")
         st.write(f"### 📍 {doc_type} 필수 제출 서류")
         
-        # 법령 기반 필요 서류 안내 (예시 데이터)
+        # 법령 기반 필요 서류 데이터
         required_docs = {
             "건축허가 신청서": ["건축할 대지의 범위와 소유권 증명 서류", "설계도서 (건축계획서, 배치도, 평면도 등)", "사전결정서 (해당 시)"],
             "건축 신고서": ["배치도, 평면도", "대지의 소유권 증명 서류"],
+            "용도변경 허가신청": ["용도변경하려는 층의 변경 전·후 평면도", "건축물대장"],
             "가설건축물 축조신고": ["배치도", "평면도", "대지사용승낙서 (타인 토지일 경우)"]
         }
         
-        for doc in required_docs.get(doc_type, ["관련 법령 확인 필요"]):
+        current_docs = required_docs.get(doc_type, ["관련 법령 확인 필요"])
+        for doc in current_docs:
             st.write(f"• {doc}")
 
         st.divider()
         st.subheader("🖊️ 텍스트 양식 자동 생성 (미리보기)")
-        with st.form("doc_info_form"):
-            name = st.text_input("신청인 성명")
-            addr = st.text_input("대지 위치 (용인시...)")
-            purpose = st.text_area("신청 사유 및 내용")
+        
+        # 폼 내부에 입력창 배치
+        with st.form("doc_info_form", clear_on_submit=False):
+            input_name = st.text_input("신청인 성명")
+            input_addr = st.text_input("대지 위치 (용인시...)")
+            input_purpose = st.text_area("신청 사유 및 내용")
             
-            if st.form_submit_button("양식 텍스트 생성"):
-                st.success("아래 내용을 복사하여 세움터 비고란이나 신청서 작성 시 참고하세요.")
-                doc_template = f"""
-                [민원 신청 요약]
-                - 민원종류: {doc_type}
-                - 신청인: {name}
-                - 대지위치: {addr}
-                - 신청내용: {purpose}
-                - 작성일자: {datetime.now().strftime('%Y-%m-%d')}
-                """
-                st.code(doc_template)
+            submit_btn = st.form_submit_button("양식 텍스트 생성")
+            
+            if submit_btn:
+                if not input_name or not input_addr:
+                    st.error("성명과 대지 위치를 입력해주세요.")
+                else:
+                    st.success("아래 내용을 복사하여 세움터 비고란이나 신청서 작성 시 참고하세요.")
+                    doc_template = f"""
+[민원 신청 요약]
+- 민원종류: {doc_type}
+- 신청인: {input_name}
+- 대지위치: {input_addr}
+- 신청내용: {input_purpose}
+- 작성일자: {datetime.now().strftime('%Y-%m-%d')}
+                    """
+                    st.code(doc_template, language="markdown")
 
     # --- Tab 3: 결과 확인 방법 ---
     with tabs[2]:
         st.subheader("접수 민원 처리 상태 확인")
         st.markdown("""
         1. **세움터 접속:** [나의 민원 확인](https://www.e-ais.go.kr/) 메뉴 이용
-        2. **정부24 확인:** 'My Gov' -> '서비스 신청내역'에서 확인 가능
-        3. **문자 알림:** 접수 시 등록한 휴대폰 번호로 단계별 SMS 발송 (보완, 반려, 완료 등)
-        4. **전화 문의:** - 처인구 건축허가과: 031-324-54xx
-           - 기흥구 건축허가과: 031-324-64xx
-           - 수지구 건축허가과: 031-324-84xx
-        """)
-
 
 # --- 🗺️ 3. 대지 위치 시각화 (독립된 지도 페이지) ---
 elif st.session_state.current_page == "map":
