@@ -67,3 +67,40 @@ def handle_ai_analysis(user_query):
     save_history(st.session_state.chat_history)
     
     return response_text
+
+# ==========================================
+# AI 민원서 생성 함수
+# ==========================================
+
+def generate_civil_document(civil_type, address, content):
+
+    prompt = f"""
+    당신은 용인시 건축 행정 민원 전문 AI입니다.
+
+    아래 정보를 바탕으로
+    실제 행정기관 제출용 민원서를 작성하세요.
+
+    [민원 유형]
+    {civil_type}
+
+    [대상 주소]
+    {address}
+
+    [민원 내용]
+    {content}
+
+    아래 형식으로 작성:
+
+    1. 민원 제목
+    2. 민원 취지
+    3. 민원 내용
+    4. 요청 사항
+    5. 관련 건축법 및 조례
+    6. 예상 검토 사항
+
+    공공기관 제출 형식으로 정중하고 전문적으로 작성하세요.
+    """
+
+    response = handle_ai_analysis(prompt)
+
+    return response
