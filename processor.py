@@ -68,51 +68,44 @@ def handle_ai_analysis(user_query):
     
     return response_text
 
-# processor.py 내의 기존 generate_civil_document 함수를 아래 코드로 교체하세요.
+# 민원 생성 함수
 
 def generate_civil_document(civil_type, site_address, civil_content):
     """
     민원 양식 전용 생성 함수
-    주의: 메인 챗봇 히스토리와 섞이지 않도록 대화 기록 저장(save_history) 로직을 절대 포함하지 않습니다.
     """
     
-    # 1. LLM 초기화 (기존에 사용하시던 모델 객체 생성 방식 그대로 사용하시면 됩니다)
-    # 예: llm = ChatOpenAI(model_name="gpt-4o", temperature=0.3) 
+    # LLM 호출 부분 (기존 설정 유지)
     
-    # 2. 민원 양식 전용 프롬프트 (개선사항 1, 2, 3, 4 반영)
     system_prompt = f"""
     당신은 용인시청 건축부서에 제출할 민원서를 작성하는 전문 행정사입니다.
-    사용자의 입력 정보를 바탕으로 '오직 민원서 양식'만 간소화하여 바로 출력하세요.
+    사용자의 입력 정보를 바탕으로 '오직 민원서 양식'만 작성하여 바로 출력하세요.
 
-    [작성 원칙 - 매우 중요]
-    1. 결론, 핵심근거, 세부 해석, 관련 건축법/조례, 예상 검토사항 등의 내용은 절대 작성하지 마세요.
-    2. 인사말이나 부연 설명 없이, 오직 아래의 [민원서 템플릿]에 맞춘 결과물만 텍스트로 출력하세요.
-    3. 어조는 절대 공격적이거나 감정적이지 않아야 합니다. '불법', '당장 조치해라' 등의 거친 표현 대신, '불편을 겪고 있으니 행정적 지도를 요청드립니다', '개선 방안을 검토해 주시길 바랍니다' 등 정중하고 객관적인 행정 용어로 순화하세요.
-    4. 내용은 핵심만 전달되도록 최대한 간소화하여 3~4문장 내외로 작성하세요.
+    [작성 규칙]
+    1. 반드시 아래 템플릿의 1번부터 4번까지만 작성하세요. 5번(법규 해석)이나 6번(검토 사항)은 절대 포함하지 마세요.
+    2. 각 번호의 제목 뒤에는 반드시 한 줄의 줄바꿈을 넣어주세요. (예: 1. 민원 제목 [줄바꿈] 내용)
+    3. 어조는 매우 정중하고 객관적인 행정 용어를 사용하세요.
+    4. 내용은 핵심만 전달되도록 간소화하여 작성하세요.
 
     [민원서 템플릿]
-    ■ 민원 제목: (민원 내용을 요약하여 정중한 제목 작성)
-    ■ 대상 주소: {site_address}
-    ■ 민원 유형: {civil_type}
-    
-    ■ 민원 요지 및 요청사항:
-    (이곳에 순화되고 간소화된 민원 내용 작성)
+    1. 민원 제목
+    (제목 내용)
+
+    2. 대상 주소
+    {site_address}
+
+    3. 민원 유형
+    {civil_type}
+
+    4. 민원 요지 및 요청사항
+    (내용을 3~4문장 내외로 간소하게 작성)
     """
 
-    user_prompt = f"다음 내용을 바탕으로 민원서를 작성해 주세요: {civil_content}"
+    user_prompt = f"다음 민원 내용을 바탕으로 양식을 생성해줘: {civil_content}"
 
-    # 3. LLM 호출 (메모리나 체인을 사용하지 않고 단발성으로 호출하여 히스토리 오염 방지)
-    # 프레임워크(LangChain, LlamaIndex 등)에 맞춰 호출 코드를 조정하세요.
-    # 예시 (LangChain의 경우):
-    # messages = [
-    #     SystemMessage(content=system_prompt),
-    #     HumanMessage(content=user_prompt)
-    # ]
-    # response = llm.invoke(messages)
-    # result_text = response.content
+    # LLM 호출 및 결과 반환 (예시 구조)
+    # result = llm.invoke([SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)])
+    # return result.content
     
-    # 이 부분은 현재 사용 중인 llm 호출 방식에 맞게 수정하세요.
-    result_text = llm_invoke_function(system_prompt, user_prompt) # 임시 함수명
-    
-    # 4. 결과 반환 (DB나 History 저장 로직 제거)
-    return result_text
+    # 실제 환경에 맞는 호출 함수를 사용하세요.
+    return llm_invoke_function(system_prompt, user_prompt)
