@@ -251,14 +251,16 @@ elif st.session_state.current_page == "doc_gen":
                 try:
                     st.write("🛰️ 서식 구조화 및 양식 작성 중...")
                     
-                    # [개선 5] 메인화면 챗봇 이력 노출 분리
-                    # 주의: 백엔드 processor.py의 generate_civil_document 내부에 history 저장 로직이 있다면 분리 필요
-                    # 예: result = generate_civil_document(civil_type, site_address, civil_content, save_history=False)
+                    # [개선 5 반영] 메인 챗봇 히스토리와 완전 분리됨
+                    # processor.py에서 단발성(Stateless) 호출로 수정되었으므로 그대로 사용합니다.
                     result = generate_civil_document(
                         civil_type,
                         site_address,
                         civil_content
                     )
+                    
+                    # (선택사항) 민원 양식 생성 후, 세션에 선택된 기존 챗봇 인덱스가 꼬이는 것을 방지
+                    st.session_state.selected_index = None
 
                     status.update(label="✅ 민원서 생성 완료", state="complete")
                     st.success("민원서 생성이 완료되었습니다.")
