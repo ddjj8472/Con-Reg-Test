@@ -337,6 +337,8 @@ elif st.session_state.current_page == "doc_gen":
                         use_container_width=True
                     )
 
+                    st.caption("※ 여기서 제공하는 민원양식은 하나의 예시로 상황과 목적에 따라 적절하게 수정하여 사용하는 것을 권장합니다.")
+
                 except Exception as e:
                     status.update(label="❌ 민원 생성 실패", state="error")
                     st.error(f"오류 발생: {str(e)}")
