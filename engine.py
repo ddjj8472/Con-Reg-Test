@@ -19,22 +19,32 @@ def get_semantic_keywords(user_query):
     except: return ""
 
 def apply_law_links(text):
-    """답변 내용 중 법규명이 포함되어 있으면 하단에 링크 섹션을 추가합니다."""
+    """
+    공백 유무와 상관없이 본문 내 법규명을 찾아 링크 섹션을 추가합니다.
+    """
     link_db = load_law_links()
     if not link_db:
         return text
     
     found_links = []
-    # 이름이 긴 법령부터 찾아야 '건축법 시행령'이 '건축법'으로 잘못 매칭되지 않습니다.
+    # 1. 비교를 위해 본문의 공백을 제거한 '검색용 텍스트'를 만듭니다.
+    text_for_search = text.replace(" ", "").replace("\n", "")
+    
+    # 2. 법규명 명칭이 긴 순서대로 정렬 (매칭 간섭 방지)
     sorted_law_names = sorted(link_db.keys(), key=len, reverse=True)
     
     for law_name in sorted_law_names:
-        if law_name in text:
+        # 3. CSV의 법규명에서도 공백을 제거합니다.
+        law_name_no_space = law_name.replace(" ", "")
+        
+        # 4. 공백을 제거한 상태에서 포함 여부를 확인합니다.
+        if law_name_no_space in text_for_search:
             link_entry = f"- [{law_name}]({link_db[law_name]})"
             if link_entry not in found_links:
                 found_links.append(link_entry)
     
     if found_links:
+        # 가독성을 위해 구분선과 함께 링크 리스트를 추가합니다.
         link_section = "\n\n---\n\n### 🔗 관련 법령 원문 링크\n" + "\n".join(found_links)
         return text + link_section
     return text
