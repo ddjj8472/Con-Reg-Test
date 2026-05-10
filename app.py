@@ -2,7 +2,6 @@ import streamlit as st
 import time
 from datetime import datetime
 import traceback
-import streamlit.components.v1 as components 
 import pandas as pd
 import numpy as np
 import base64
@@ -10,6 +9,7 @@ import os
 import io
 from widget_utils import inject_floating_button
 from docx import Document  # [최적화] 조건문 내부의 import를 최상단으로 이동
+# import streamlit.components.v1 as components 이제 지원되지 않는 코드라 해서 제거함(5/10 수)
 
 # 용인시 민원창구 연계버튼
 inject_floating_button()
@@ -383,7 +383,8 @@ elif st.session_state.current_page == "map":
     if KAKAO_JS_KEY == "본인의_카카오_자바스크립트_앱_키를_여기에_붙여넣으세요":
         st.warning("🚧 카카오 JavaScript API 키를 코드에 입력해 주세요.")
     else:
-        components.html(map_html, height=670)
+    # st.iframe으로 교체 (data URI 형식을 사용합니다) # 오류나서 고쳤음
+    st.iframe("data:text/html;charset=utf-8," + map_html, height=670)
 
 
 # --- 💡 4. Q&A 게시판 (관리자 기능 복구) ---
@@ -521,7 +522,7 @@ elif st.session_state.current_page == "sitemap":
         </div>
     </div>
     """
-    components.html(architecture_html, height=520)
+    st.iframe("data:text/html;charset=utf-8," + architecture_html, height=520)
 
     st.divider()
 
