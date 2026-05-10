@@ -383,9 +383,8 @@ elif st.session_state.current_page == "map":
     if KAKAO_JS_KEY == "본인의_카카오_자바스크립트_앱_키를_여기에_붙여넣으세요":
         st.warning("🚧 카카오 JavaScript API 키를 코드에 입력해 주세요.")
     else:
-    # st.iframe으로 교체 (data URI 형식을 사용합니다) # 오류나서 고쳤음
-    st.iframe("data:text/html;charset=utf-8," + map_html, height=670)
-
+        # 아래 코드 지원 안한다 그래서 수정함 (5/10)
+        st.iframe("data:text/html;charset=utf-8," + map_html, height=670)
 
 # --- 💡 4. Q&A 게시판 (관리자 기능 복구) ---
 elif st.session_state.current_page == "qna":
