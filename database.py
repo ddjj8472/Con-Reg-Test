@@ -88,3 +88,16 @@ def get_ordinance_data(query, semantic_tags=""):
     
     status = "COMPLETE" if total_density_score >= SATISFACTION_THRESHOLD else "INCOMPLETE"
     return status, "\n\n---\n\n".join(final_context)
+
+@st.cache_data
+def load_law_links():
+    """link.csv 파일을 읽어 {법규명: 원문링크} 딕셔너리를 반환합니다."""
+    path = "link.csv"
+    if os.path.exists(path):
+        try:
+            # link.csv를 읽어 법규명과 링크를 매핑합니다.
+            df = pd.read_csv(path, encoding='utf-8-sig')
+            return dict(zip(df['법규명'], df['원문링크']))
+        except:
+            return {}
+    return {}
