@@ -93,14 +93,18 @@ def get_ordinance_data(query, semantic_tags=""):
 def load_law_links():
     path = "link.csv"
     if os.path.exists(path):
-        # 다양한 인코딩 시도
         for enc in ['utf-8-sig', 'cp949', 'utf-8', 'euc-kr']:
             try:
                 df = pd.read_csv(path, encoding=enc)
-                # 컬럼명과 데이터의 앞뒤 공백을 완전히 제거하여 매칭 확률을 높임
                 df.columns = [c.strip() for c in df.columns]
                 if '법규명' in df.columns and '원문링크' in df.columns:
-                    return {str(k).strip(): str(v).strip() for k, v in zip(df['법규명'], df['원문링크'])}
-            except:
-                continue
+                    links = {}
+                    for k, v in zip(df['법규명'], df['원문링크']):
+                        url = str(v).strip()
+                        # [핵심] 주소가 www로 시작하면 https://를 강제로 붙임
+                        if url.startswith("www."):
+                            url = "https://" + url
+                        links[str(k).strip()] = url
+                    return links
+            except: continue
     return {}
