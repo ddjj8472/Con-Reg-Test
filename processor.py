@@ -1,5 +1,6 @@
 # processor.py
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import streamlit as st
 import requests
 import json
@@ -31,7 +32,7 @@ def handle_ai_analysis(user_query):
     )
 
     # 4. 대화방 방식으로 저장
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    now = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d %H:%M:%S")
 
     # chat_history가 없으면 빈 리스트 생성
     if "chat_history" not in st.session_state:
