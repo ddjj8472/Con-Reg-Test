@@ -126,12 +126,12 @@ with st.sidebar:
     else:
         st.caption("저장된 분석 기록이 없습니다.")
 
-   st.divider()
+    st.divider()
     if st.button("🗑️ 전체 기록 삭제"):
         st.session_state.chat_history = []
         st.session_state.selected_index = None
         from storage import clear_history
-        # 💡 [수정] 기록을 지울 때도 user_id를 넘겨서 내 기록 파일만 삭제함
+        # 사용자별 고유 ID를 넘겨서 내 파일만 삭제하도록 연동된 부분입니다
         clear_history(st.session_state.user_id) 
         st.rerun()
 
