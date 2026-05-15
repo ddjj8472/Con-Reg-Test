@@ -32,7 +32,9 @@ def handle_ai_analysis(user_query):
     )
 
     # 4. 대화방 방식으로 저장
-    now = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d %H:%M:%S")
+    # 명시적으로 KST(한국 표준시)를 가져와서 문자열로 저장
+    from datetime import datetime, timezone, timedelta
+    kst_now = datetime.now(timezone(timedelta(hours=9))).strftime("%Y-%m-%d %H:%M:%S")
 
     # chat_history가 없으면 빈 리스트 생성
     if "chat_history" not in st.session_state:
@@ -42,35 +44,36 @@ def handle_ai_analysis(user_query):
     if "selected_index" not in st.session_state:
         st.session_state.selected_index = None
 
-    # 새 대화가 필요한 경우
+    # 새 대화가 필요한 경우 (기존에 대화방이 없거나, 선택된 방이 없을 때)
     if st.session_state.selected_index is None or len(st.session_state.chat_history) == 0:
         new_chat = {
             "title": user_query[:20] + ("..." if len(user_query) > 20 else ""),
-            "created_at": now,
-            "updated_at": now,
+            "created_at": kst_now,
+            "updated_at": kst_now,
             "messages": []
         }
-
         st.session_state.chat_history.append(new_chat)
+        # 새로 만든 방을 현재 선택된 방으로 지정
         st.session_state.selected_index = len(st.session_state.chat_history) - 1
 
-    # 현재 대화방 찾기
+    # 현재 선택된 대화방 찾기
     current_chat = st.session_state.chat_history[st.session_state.selected_index]
 
     # 혹시 messages가 없으면 생성
     if "messages" not in current_chat:
         current_chat["messages"] = []
 
-    # 현재 대화방 안에 질문/답변 추가
+    # 현재 대화방 안에 질문/답변 추가 (시간도 KST로)
     current_chat["messages"].append({
         "query": user_query,
         "response": response_text,
-        "time": now
+        "time": kst_now
     })
 
-    current_chat["updated_at"] = now
+    # 마지막 업데이트 시간 갱신
+    current_chat["updated_at"] = kst_now
 
-    # 저장
+    # JSON 파일로 최종 저장
     save_history(st.session_state.chat_history)
 
     return response_text
