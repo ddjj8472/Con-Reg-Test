@@ -188,8 +188,8 @@ def get_relevant_sitemap(user_query):
             return "\n\n---\n\n### 🏛️ 용인시청 홈페이지 행정 서비스 연계\n" + "\n".join(found_links)
             
     except Exception as e:
-        # 에러 발생 시 시스템이 멈추지 않고 기존 답변만 나가도록 보호 (Failsafe)
-        print(f"Sitemap matching error: {e}")
+        import streamlit as st
+        st.error(f"사이트맵 매칭 중 오류 발생: {e}")
         return ""
         
     return ""
