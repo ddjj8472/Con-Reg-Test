@@ -82,6 +82,79 @@ else:
     </style>
     """, unsafe_allow_html=True)
 
+# --- [대화기록 검색 팝업 함수] 검색어 입력 시 관련 대화를 모달창에 표시 ---
+dialog_decorator = st.dialog if hasattr(st, "dialog") else st.experimental_dialog
+
+@dialog_decorator("🔍 대화기록 검색", width="large")
+def open_history_search_dialog():
+    st.markdown("""
+    <style>
+        div[data-testid="stDialog"] div[role="dialog"] { width: min(760px, 92vw) !important; }
+        .search-result-meta {
+            font-size: 13px; color: #777; line-height: 1.35;
+            margin-top: -6px; margin-bottom: 8px;
+        }
+        .search-result-separator {
+            border-bottom: 1px solid #d9d9d9;
+            margin: 8px 0 10px 0;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+    search_query = st.text_input(
+        "검색어 입력",
+        placeholder="예: 일조권, 건폐율, 접도, 주차장",
+        key="dialog_history_search_input"
+    )
+    query = search_query.strip().lower()
+
+    if not st.session_state.chat_history:
+        st.caption("저장된 대화기록이 없습니다.")
+        return
+
+    results = []
+    for idx, chat in enumerate(st.session_state.chat_history):
+        title = chat.get("title", "새 대화")
+        searchable_text = title + " "
+
+        for msg in chat.get("messages", []):
+            searchable_text += msg.get("query", "") + " "
+            searchable_text += msg.get("response", "") + " "
+
+        if not query or query in searchable_text.lower():
+            results.append((idx, chat))
+
+    st.caption(f"검색어: {search_query} · 결과 {len(results)}개" if query else "최근 대화")
+
+    if not results:
+        st.warning("검색 결과가 없습니다.")
+        return
+
+    with st.container(height=430, border=False):
+        for idx, chat in reversed(results[-20:]):
+            title = chat.get("title", "새 대화")
+            time_str = chat.get("updated_at", chat.get("created_at", ""))
+            messages = chat.get("messages", [])
+
+            preview = messages[0].get("query", "") if messages else ""
+            preview = preview[:70] + "..." if len(preview) > 70 else preview
+
+            short_title = title[:28] + "..." if len(title) > 28 else title
+
+            if st.button(f"💬 {short_title}", key=f"dialog_open_chat_{idx}", use_container_width=True):
+                st.session_state.selected_index = idx
+                st.session_state.current_page = "main"
+                st.rerun()
+
+            meta_text = preview
+            if time_str:
+                meta_text += f"<br>{time_str}" if meta_text else time_str
+
+            if meta_text:
+                st.markdown(f'<div class="search-result-meta">{meta_text}</div>', unsafe_allow_html=True)
+
+            st.markdown('<div class="search-result-separator"></div>', unsafe_allow_html=True)
+
 # 4. 사이드바 구성
 with st.sidebar:
     st.title("⚙️ 플랫폼 제어")
@@ -170,6 +243,8 @@ with st.sidebar:
         st.session_state.selected_index = None
         st.session_state.current_page = "main"
         st.rerun()
+    if st.button("🔍 대화 검색", use_container_width=True):
+        open_history_search_dialog()
         
     st.divider()
     st.subheader("📁 대화 이력 (클릭 시 열람)")
