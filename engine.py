@@ -35,7 +35,7 @@ def apply_law_links(text):
             if not url.startswith(('http://', 'https://')):
                 url = 'https://' + url
             
-            link_entry = f"- [**{law_name}**]|||{url}|||"
+            link_entry = f"- [{law_name}]|||{url}|||"
             if link_entry not in found_links:
                 found_links.append(link_entry)
     
