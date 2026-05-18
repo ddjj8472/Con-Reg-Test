@@ -193,3 +193,16 @@ def get_relevant_sitemap(user_query):
         return ""
         
     return ""
+
+def generate_final_response(user_query):
+    # 1. 기존의 6단계 알고리즘과 법령 매칭 파이프라인 가동 (기존 코드 그대로 유지)
+    law_matched_text = your_existing_6_stage_algorithm(user_query)
+    
+    # 2. [신규 추가] 사이트맵 독립 파이프라인 가동 (기존 로직과 간섭 없음)
+    sitemap_text = get_relevant_sitemap(user_query)
+    
+    # 3. 두 결과를 결합하여 최종 답변 완성
+    # 기존 답변 구조(결론, 핵심근거 등)는 온전히 유지되면서 맨 하단에 행정 링크가 깔끔하게 붙습니다.
+    final_response = law_matched_text + sitemap_text
+    
+    return final_response
