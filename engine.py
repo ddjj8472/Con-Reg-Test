@@ -117,3 +117,79 @@ def get_gemini_response(user_query, db_status, db_context, semantic_tags=""):
             time.sleep(2)
         except: continue
     return "시스템 엔진 응답 실패. 잠시 후 다시 시도해 주세요."
+
+#용인시청 사이트맵 알고리즘 추가
+def get_relevant_sitemap(user_query):
+    """
+    용인시청 사이트맵 DB에서 사용자의 질문과 가장 관련성이 높은 메뉴를 LLM 추론으로 추출합니다.
+    기존 6단계 법령 검색과 완전히 분리된 독립적 파이프라인으로 작동합니다.
+    """
+    import google.generativeai as genai # 현재 프로젝트에서 사용하는 gemini 라이브러리
+    import json
+    from database import load_sitemap_db
+    
+    df = load_sitemap_db()
+    if df is None or df.empty:
+        return ""
+        
+    # 1. LLM에게 전달할 최소한의 사이트맵 콘텍스트 생성 (메뉴와 기능만 요약하여 토큰 절약)
+    sitemap_context = []
+    for idx, row in df.iterrows():
+        sitemap_context.append({
+            "index": idx,
+            "menu": row['menu (메뉴명)'],
+            "function": row['function (기능)']
+        })
+    
+    # 2. 독립적인 추론 프롬프트 설계
+    prompt = f"""
+당신은 용인시청 행정 시스템 안내 전문가입니다.
+다음은 용인시청 홈페이지의 건축/민원 관련 행정 사이트맵(메뉴명 및 주요 기능) 데이터입니다:
+
+{json.dumps(sitemap_context, ensure_ascii=False, indent=2)}
+
+[사용자 민원 질문]:
+"{user_query}"
+
+위 사용자 질문의 의도와 행정 목적을 분석하여, 민원을 해결하기 위해 접속해야 하는 가장 밀접한 행정 웹페이지를 최대 2개 선택해주세요.
+만약 질문과 연관된 행정 메뉴가 전혀 없다면 빈 리스트 []를 반환하세요.
+
+반드시 아래 JSON 형식으로만 답변하세요. 어떠한 서론이나 추가 설명도 포함하지 마세요:
+[
+  {{"index": 선택한_메뉴의_index, "reason": "선택한 행정적 이유"}}
+]
+"""
+    try:
+        # 기존에 프로젝트에서 세팅한 모델 객체 호출 방식을 적용하세요 (예: gemini-1.5-flash)
+        model = genai.GenerativeModel("gemini-1.5-flash") 
+        response = model.generate_content(prompt)
+        
+        result_text = response.text.strip()
+        if "```json" in result_text:
+            result_text = result_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in result_text:
+            result_text = result_text.split("```")[1].split("```")[0].strip()
+            
+        selected_items = json.loads(result_text)
+        
+        found_links = []
+        for item in selected_items:
+            idx = int(item["index"])
+            if 0 <= idx < len(df):
+                menu_path = df.iloc[idx]['menu (메뉴명)'].strip()
+                # 전체 경로에서 최종 메뉴명만 깔끔하게 추출 (예: '민원편람/서식')
+                menu_name = menu_path.split(">")[-1].strip() 
+                link = df.iloc[idx]['link (링크)'].strip()
+                
+                # components.py가 안전하게 하이퍼링크로 바꿀 수 있도록 우리만의 특수 구분자(|||) 적용
+                found_links.append(f"- **{menu_name} 바로가기**: [{menu_path}]|||{link}|||")
+                
+        if found_links:
+            return "\n\n---\n\n### 🏛️ 용인시청 홈페이지 행정 서비스 연계\n" + "\n".join(found_links)
+            
+    except Exception as e:
+        # 에러 발생 시 시스템이 멈추지 않고 기존 답변만 나가도록 보호 (Failsafe)
+        print(f"Sitemap matching error: {e}")
+        return ""
+        
+    return ""
