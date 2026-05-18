@@ -249,9 +249,14 @@ with st.sidebar:
     if st.session_state.chat_history:
         for i, chat in enumerate(reversed(st.session_state.chat_history)):
             actual_index = len(st.session_state.chat_history) - 1 - i
-            time_str = chat.get("updated_at", chat.get("created_at", "00:00:00"))[11:16]
+            
+            # 💡 [수정] [:16]으로 변경하면 '2026-05-18 15:30' 까지 잘라냅니다.
+            # (만약 연도를 빼고 '05-18 15:30'만 보려면 [5:16]으로 하시면 됩니다)
+            time_str = chat.get("updated_at", chat.get("created_at", "0000-00-00 00:00:00"))[:16]
+            
             query_summary = chat.get("title", "새 대화")
-            if len(query_summary) > 12: query_summary = query_summary[:12] + "..."
+            # 공간이 좁을 수 있으므로 제목 길이를 12자에서 10자로 살짝 줄이는 것을 권장합니다.
+            if len(query_summary) > 10: query_summary = query_summary[:10] + "..."
             
             if st.button(f"🕒 {time_str} | {query_summary}", key=f"hist_{actual_index}", use_container_width=True):
                 st.session_state.selected_index = actual_index
