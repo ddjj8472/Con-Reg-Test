@@ -31,13 +31,16 @@ def get_image_base64(image_path):
 # 1. 페이지 설정 (최상단)
 st.set_page_config(page_title="용인시 건축 조례 지원 플랫폼", layout="wide")
 
+# (위쪽 import 부분에 만약 'import uuid'가 있다면 그 줄은 삭제하셔도 됩니다.)
+
 # 2. 상태 변수 초기화
-    # 💡 [신규 추가] 접속한 브라우저마다 고유한 user_id 부여 (새로고침해도 유지됨)
+# 💡 [수정] 무작위 임시 ID 발급 로직을 지우고, 무조건 "guest" 상태로 시작하도록 변경
 if "user_id" not in st.session_state:
-    st.session_state.user_id = uuid.uuid4().hex
+    st.session_state.user_id = "guest"
+
 if "chat_history" not in st.session_state:
-    # 💡 [수정] 기록을 불러올 때 user_id를 함께 넘겨서 내 기록만 가져옴
     st.session_state.chat_history = load_history(st.session_state.user_id)
+
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
 if "dark_mode_toggle" not in st.session_state:
@@ -49,7 +52,7 @@ if "selected_index" not in st.session_state:
 if "current_page" not in st.session_state:
     st.session_state.current_page = "main"
 if "qna_list" not in st.session_state:
-    st.session_state.qna_list = [] 
+    st.session_state.qna_list = []
 
 # 3. 스타일 적용
 apply_custom_style(st.session_state.dark_mode)
