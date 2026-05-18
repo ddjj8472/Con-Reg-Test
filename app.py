@@ -83,6 +83,65 @@ else:
 with st.sidebar:
     st.title("⚙️ 플랫폼 제어")
     
+    # 💡 [정식 도입] 정밀 회원인증 및 아이디 중복 차단 관리 UI
+    st.subheader("👤 실무자 시스템 인증")
+    
+    if st.session_state.user_id == "guest":
+        # 로그인과 회원가입을 명확히 분할하는 시스템 탭 구성
+        auth_tabs = st.tabs(["🔑 로그인", "📝 회원가입"])
+        
+        # --- [탭 A: 로그인 처리] ---
+        with auth_tabs[0]:
+            with st.form("login_form"):
+                login_id = st.text_input("아이디", key="login_id_input", placeholder="아이디 입력")
+                login_pw = st.text_input("비밀번호", type="password", key="login_pw_input", placeholder="비밀번호 입력")
+                submit_login = st.form_submit_button("시스템 로그인", use_container_width=True)
+                
+                if submit_login:
+                    if not login_id.strip() or not login_pw.strip():
+                        st.error("아이디와 비밀번호를 모두 입력해 주세요.")
+                    else:
+                        from storage import authenticate_user
+                        if authenticate_user(login_id.strip(), login_pw.strip()):
+                            st.session_state.user_id = login_id.strip()
+                            st.session_state.chat_history = load_history(st.session_state.user_id)
+                            st.success(f"🔓 {st.session_state.user_id}님, 로그인 성공")
+                            st.rerun()
+                        else:
+                            st.error("❌ 아이디 또는 비밀번호가 일치하지 않습니다.")
+                            
+        # --- [탭 B: 회원가입 처리 - 중복 원천 차단] ---
+        with auth_tabs[1]:
+            with st.form("register_form", clear_on_submit=True):
+                reg_id = st.text_input("사용할 아이디", key="reg_id_input", placeholder="예: architect01")
+                reg_pw = st.text_input("비밀번호 설정", type="password", key="reg_pw_input", placeholder="비밀번호 입력")
+                reg_pw_conf = st.text_input("비밀번호 확인", type="password", key="reg_pw_conf_input", placeholder="비밀번호 다시 입력")
+                submit_reg = st.form_submit_button("회원가입 신청", use_container_width=True)
+                
+                if submit_reg:
+                    if not reg_id.strip() or not reg_pw.strip() or not reg_pw_conf.strip():
+                        st.error("모든 빈칸을 채워주세요.")
+                    elif reg_pw != reg_pw_conf:
+                        st.error("❌ 비밀번호 확인이 일치하지 않습니다.")
+                    else:
+                        from storage import check_id_exists, register_user
+                        # 통상적인 웹사이트 프로세스: 가입 전 중복 상태 실시간 차단
+                        if check_id_exists(reg_id.strip()):
+                            st.error("⚠️ 이미 가입된 아이디입니다. 다른 아이디를 사용해 주세요.")
+                        else:
+                            if register_user(reg_id.strip(), reg_pw.strip()):
+                                st.success("✅ 회원가입이 완료되었습니다! 로그인 탭에서 이용해 주세요.")
+                            else:
+                                st.error("회원가입 처리 중 오류가 발생했습니다.")
+    else:
+        st.success(f"🟢 실무자 세션 연결됨: **{st.session_state.user_id}**")
+        if st.button("안전 로그아웃", use_container_width=True, type="primary"):
+            st.session_state.user_id = "guest"
+            st.session_state.chat_history = load_history("guest")
+            st.session_state.selected_index = None
+            st.rerun()
+
+    st.divider()
     st.subheader("📌 메뉴")
     
     if st.button("🏠 메인화면 (챗봇)", use_container_width=True):
@@ -131,7 +190,6 @@ with st.sidebar:
         st.session_state.chat_history = []
         st.session_state.selected_index = None
         from storage import clear_history
-        # 사용자별 고유 ID를 넘겨서 내 파일만 삭제하도록 연동된 부분입니다
         clear_history(st.session_state.user_id) 
         st.rerun()
 
