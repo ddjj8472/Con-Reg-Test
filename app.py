@@ -49,24 +49,46 @@ def sync_dark_mode():
     st.session_state.dark_mode = st.session_state.dark_mode_toggle
 
 # ==========================================
-# 3. 프리미엄 CSS 스타일링 (SaaS 룩앤필)
+# 3. 프리미엄 CSS 스타일링 (SaaS 룩앤필 & 아이콘 깨짐 완벽 방지)
 # ==========================================
-apply_custom_style(st.session_state.dark_mode) # 기존 스타일 함수 호출 유지
+# 기존 style.py에서 넘어오는 CSS가 있다면 여기서 먼저 실행됩니다.
+apply_custom_style(st.session_state.dark_mode) 
 
 def apply_premium_ui(is_dark):
-    # 공통 베이스 CSS (아이콘 깨짐 방지 타겟팅 최적화)
     base_css = """
 <style>
     @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
     
-    /* 전체 선택자(*) 대신 특정 UI 컴포넌트만 정밀 타겟팅하여 내장 아이콘 깨짐 원천 차단 */
-    html, body, .stApp, p, h1, h2, h3, h4, h5, h6, label, button, input, textarea, [data-testid="stWidgetLabel"] { 
-        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif !important; 
+    /* 1. 기본 폰트 적용 (!important 남발 방지) */
+    html, body, .stApp, p, h1, h2, h3, h4, h5, h6, label, input, textarea, div { 
+        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif; 
     }
     
-    /* Streamlit 순정 Material 아이콘 컴포넌트 폰트 강제 복구 및 보호 */
-    span[data-testid="stIconMaterial"], i, .material-icons {
-        font-family: 'Material Symbols Outlined', 'Material Icons' !important;
+    /* 2. 🚨 가장 중요한 아이콘 폰트 강제 복구 블록 🚨 */
+    /* style.py 등에서 * { font-family: ... !important; } 가 적용되었더라도 이를 무력화합니다. */
+    span[class*="material-symbols"], 
+    span[class*="material-icons"], 
+    i[class*="material"],
+    .material-icons,
+    .material-symbols-rounded,
+    .material-symbols-outlined,
+    [data-testid="stIconMaterial"],
+    [data-testid="stExpanderToggleIcon"],
+    button[kind="header"] span,
+    button[kind="header"] i {
+        font-family: 'Material Symbols Rounded', 'Material Symbols Outlined', 'Material Icons', sans-serif !important;
+        font-weight: normal !important;
+        font-style: normal !important;
+        letter-spacing: normal !important;
+        text-transform: none !important;
+        display: inline-block !important;
+        white-space: nowrap !important;
+        word-wrap: normal !important;
+        direction: ltr !important;
+        -webkit-font-feature-settings: 'liga' 1 !important;
+        font-feature-settings: 'liga' 1 !important;
+        -webkit-font-smoothing: antialiased !important;
     }
     
     /* 입력창 디자인 */
@@ -85,6 +107,7 @@ def apply_premium_ui(is_dark):
         font-weight: 600 !important;
         transition: all 0.2s ease !important;
         border: none !important;
+        font-family: 'Pretendard', sans-serif !important; /* 버튼 텍스트는 Pretendard 강제 */
     }
     div[data-testid="stButton"] button:hover, div[data-testid="stFormSubmitButton"] button:hover {
         transform: translateY(-2px);
@@ -169,7 +192,6 @@ def open_history_search_dialog():
 # 4. 사이드바 구성 (그룹화 및 깔끔한 정리)
 # ==========================================
 with st.sidebar:
-    # 세련된 미니멀 라인 건축 아이콘으로 변경
     st.image("https://cdn-icons-png.flaticon.com/512/1048/1048978.png", width=50)
     st.title("플랫폼 제어")
     
@@ -283,13 +305,11 @@ if st.session_state.current_page == "main":
                 st.session_state.selected_index = None
                 st.rerun()
         else:
-            # 고급 아키텍처 실사 메인 비주얼 배너 적용
             st.image(
                 "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop", 
                 use_container_width=True
             )
             
-            # 빈 화면일 때 안내 문구 (Hero Section)
             st.markdown("""
             <div style="text-align:center; padding: 30px; background: rgba(128,128,128,0.05); border-radius: 12px; margin-top: 15px;">
                 <h3 style="color: #0b459c; margin-bottom: 8px;">어떤 규제를 검토해 드릴까요?</h3>
@@ -322,7 +342,6 @@ if st.session_state.current_page == "main":
 elif st.session_state.current_page == "doc_gen":
     st.title("📝 맞춤형 건축 민원 양식 자동완성")
     
-    # 업무용 오피스 룩앤필의 고급 모던 인테리어 실사 이미지 적용
     st.image(
         "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2069&auto=format&fit=crop",
         use_container_width=True
@@ -347,7 +366,6 @@ elif st.session_state.current_page == "doc_gen":
         "건축물 해석 문의": "건축과", "기타": "민원여권과"
     }
 
-    # 레이아웃 개선 (2단 분할)
     col1, col2 = st.columns(2)
     with col1:
         civil_type = st.selectbox("📌 민원 유형 선택", list(required_docs.keys()))
@@ -370,7 +388,6 @@ elif st.session_state.current_page == "doc_gen":
                     st.subheader("📄 생성된 민원서")
                     st.markdown(f"<div style='padding:20px; border:1px solid #ddd; border-radius:8px; background:rgba(0,0,0,0.02);'>{result}</div>", unsafe_allow_html=True)
                     
-                    # 정보 안내 탭
                     info_tabs = st.tabs(["📎 필요 서류", "🏢 담당 부서", "🏛️ 접수 절차", "📥 파일 다운로드"])
                     
                     with info_tabs[0]:
@@ -408,7 +425,6 @@ elif st.session_state.current_page == "doc_gen":
 elif st.session_state.current_page == "qna":
     st.title("💡 커뮤니티 Q&A")
     
-    # 전문적이고 신뢰감 있는 데스크톱 회의/피드백 실사 이미지 추가
     st.image(
         "https://images.unsplash.com/photo-1455390582262-044cdead277a?q=80&w=2073&auto=format&fit=crop",
         use_container_width=True
@@ -460,7 +476,6 @@ elif st.session_state.current_page == "sitemap":
     st.title("🗺️ 시스템 아키텍처 및 취급 데이터")
     st.write("본 플랫폼은 클라우드 기반 AI 엔진과 최신 법률 DB를 연동하여 동작합니다.")
     
-    # 아키텍처 다이어그램 HTML 유지하되 CSS만 다듬음
     architecture_html = """
     <style>
         .arch-container { background: linear-gradient(135deg, #0b459c 0%, #1a5fb4 100%); padding: 25px; border-radius: 16px; font-family: 'Pretendard', sans-serif; }
