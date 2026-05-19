@@ -54,33 +54,97 @@ if "current_page" not in st.session_state:
 if "qna_list" not in st.session_state:
     st.session_state.qna_list = []
 
-# 3. 스타일 적용
-apply_custom_style(st.session_state.dark_mode)
+# 3. 스타일 적용 (프리미엄 SaaS 및 Apple 스타일 UI 패치)
+def apply_premium_style(is_dark_mode):
+    # 공통: Pretendard 폰트 적용, 부드러운 전환 효과, Streamlit 기본 UI 숨기기
+    common_css = """
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        
+        * { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important; }
+        
+        /* 헤더 및 푸터, 햄버거 메뉴 숨기기 (깔끔한 앱 느낌) */
+        header { visibility: hidden; }
+        footer { visibility: hidden; }
+        
+        /* 부드러운 트랜지션 (색상 변경 시) */
+        div { transition: background-color 0.3s ease, color 0.3s ease; }
+        
+        /* 입력창(Input, Textarea) 공통 스타일 - Apple 스타일의 둥근 모서리와 포커스 */
+        div[data-baseweb="input"] > div, div[data-baseweb="textarea"] > div {
+            border-radius: 12px !important;
+            border: 1px solid transparent !important;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05) !important;
+        }
+        div[data-baseweb="input"] > div:focus-within, div[data-baseweb="textarea"] > div:focus-within {
+            border-color: #0b459c !important; /* 용인시/신뢰감 주는 블루 포인트 */
+            box-shadow: 0 0 0 2px rgba(11, 69, 156, 0.2) !important;
+        }
 
-# [CSS 패치 생략 없이 원본 유지]
-if st.session_state.dark_mode:
-    st.markdown("""
-    <style>
-        div[data-testid="stExpander"] details summary { background-color: #262730 !important; color: #ffffff !important; }
-        div[data-testid="stExpander"] details summary p { color: #ffffff !important; }
-        div[data-baseweb="input"] > div, div[data-baseweb="textarea"] > div { background-color: #262730 !important; }
-        input, textarea { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
-        div[data-testid="stFormSubmitButton"] button, div[data-testid="stButton"] button {
-            background-color: #333333 !important; color: #ffffff !important; border: 1px solid #555555 !important;
+        /* 버튼(Button) 프리미엄화 */
+        div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button {
+            border-radius: 10px !important;
+            font-weight: 600 !important;
+            border: none !important;
+            transition: all 0.2s ease !important;
         }
-        div[data-testid="stFormSubmitButton"] button p, div[data-testid="stButton"] button p { color: #ffffff !important; }
-        div[data-testid="stFormSubmitButton"] button:hover, div[data-testid="stButton"] button:hover {
-            background-color: #444444 !important; border: 1px solid #ffffff !important;
+        div[data-testid="stButton"] button:active, div[data-testid="stFormSubmitButton"] button:active {
+            transform: scale(0.98) !important;
+        }
+        
+        /* Expander (아코디언 메뉴) 카드 형태 부여 */
+        div[data-testid="stExpander"] {
+            border-radius: 12px !important;
+            border: none !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
+            margin-bottom: 10px !important;
         }
     </style>
-    """, unsafe_allow_html=True)
-else:
-    st.markdown("""
-    <style>
-        div[data-testid="stExpander"] details summary p, input, textarea { color: #000000 !important; -webkit-text-fill-color: #000000 !important; }
-        div[data-testid="stFormSubmitButton"] button p, div[data-testid="stButton"] button p { color: #000000 !important; }
-    </style>
-    """, unsafe_allow_html=True)
+    """
+    
+    if is_dark_mode:
+        theme_css = """
+        <style>
+            /* 다크 모드 특화 색상 (고급스러운 다크 그레이) */
+            .stApp { background-color: #1a1a1c !important; }
+            div[data-testid="stSidebar"] { background-color: #242426 !important; }
+            
+            div[data-baseweb="input"] > div, div[data-baseweb="textarea"] > div { background-color: #2c2c2e !important; }
+            input, textarea { color: #f5f5f7 !important; -webkit-text-fill-color: #f5f5f7 !important; }
+            
+            div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button {
+                background-color: #2c2c2e !important; color: #f5f5f7 !important; box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
+            }
+            div[data-testid="stButton"] button:hover, div[data-testid="stFormSubmitButton"] button:hover {
+                background-color: #3a3a3c !important;
+            }
+            div[data-testid="stExpander"] { background-color: #242426 !important; }
+        </style>
+        """
+    else:
+        theme_css = """
+        <style>
+            /* 라이트 모드 특화 색상 (Apple 공홈 스타일의 Off-white) */
+            .stApp { background-color: #fbfbfd !important; }
+            div[data-testid="stSidebar"] { background-color: #ffffff !important; border-right: 1px solid #f0f0f0 !important; }
+            
+            div[data-baseweb="input"] > div, div[data-baseweb="textarea"] > div { background-color: #ffffff !important; border: 1px solid #d2d2d7 !important; }
+            input, textarea { color: #1d1d1f !important; -webkit-text-fill-color: #1d1d1f !important; }
+            
+            div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button {
+                background-color: #ffffff !important; color: #1d1d1f !important; border: 1px solid #d2d2d7 !important; box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
+            }
+            div[data-testid="stButton"] button:hover, div[data-testid="stFormSubmitButton"] button:hover {
+                background-color: #f5f5f7 !important;
+            }
+            div[data-testid="stExpander"] { background-color: #ffffff !important; }
+        </style>
+        """
+        
+    st.markdown(common_css + theme_css, unsafe_allow_html=True)
+
+# 메인 코드에서 호출 방식
+apply_premium_style(st.session_state.dark_mode)
 
 # --- [대화기록 검색 팝업 함수] 검색어 입력 시 관련 대화를 모달창에 표시 ---
 dialog_decorator = st.dialog if hasattr(st, "dialog") else st.experimental_dialog
