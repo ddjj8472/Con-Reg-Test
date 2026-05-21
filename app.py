@@ -8,6 +8,7 @@ import base64
 import os
 import io
 import uuid
+import html
 
 # 1. 페이지 설정 (가장 먼저 실행되어야 함)
 st.set_page_config(
@@ -35,10 +36,23 @@ def get_image_base64(image_path):
             return base64.b64encode(img_file.read()).decode()
     return ""
 
+# --- [HTML 대화 메뉴용 쿼리 파라미터 유틸] ---
+def get_query_param(name):
+    value = st.query_params.get(name, None)
+    if isinstance(value, list):
+        return value[0] if value else None
+    return value
+
+def clear_query_params_and_rerun():
+    st.query_params.clear()
+    st.rerun()
+
 # ==========================================
 # 2. 상태 변수 초기화
 # ==========================================
-if "user_id" not in st.session_state: st.session_state.user_id = "guest"
+qp_user = get_query_param("_user")
+if "user_id" not in st.session_state: st.session_state.user_id = qp_user or "guest"
+elif st.session_state.user_id == "guest" and qp_user: st.session_state.user_id = qp_user
 if "chat_history" not in st.session_state: st.session_state.chat_history = load_history(st.session_state.user_id)
 if "dark_mode" not in st.session_state: st.session_state.dark_mode = False
 if "selected_index" not in st.session_state: st.session_state.selected_index = None
@@ -47,6 +61,53 @@ if "qna_list" not in st.session_state: st.session_state.qna_list = []
 
 def sync_dark_mode():
     st.session_state.dark_mode = st.session_state.dark_mode_toggle
+
+# --- [HTML 대화 메뉴 액션 처리] ---
+open_chat_idx = get_query_param("open_chat")
+pin_chat_idx = get_query_param("pin_chat")
+delete_chat_idx = get_query_param("delete_chat")
+rename_chat_idx = get_query_param("rename_chat")
+new_chat_title = get_query_param("new_title")
+
+try:
+    if open_chat_idx is not None:
+        idx = int(open_chat_idx)
+        if 0 <= idx < len(st.session_state.chat_history):
+            st.session_state.selected_index = idx
+            st.session_state.current_page = "main"
+        clear_query_params_and_rerun()
+
+    if pin_chat_idx is not None:
+        idx = int(pin_chat_idx)
+        if 0 <= idx < len(st.session_state.chat_history):
+            st.session_state.chat_history[idx]["pinned"] = not st.session_state.chat_history[idx].get("pinned", False)
+            save_history(st.session_state.chat_history, st.session_state.user_id)
+        clear_query_params_and_rerun()
+
+    if delete_chat_idx is not None:
+        idx = int(delete_chat_idx)
+        if 0 <= idx < len(st.session_state.chat_history):
+            st.session_state.chat_history.pop(idx)
+
+            if st.session_state.selected_index == idx:
+                st.session_state.selected_index = None
+            elif st.session_state.selected_index is not None and st.session_state.selected_index > idx:
+                st.session_state.selected_index -= 1
+
+            save_history(st.session_state.chat_history, st.session_state.user_id)
+        clear_query_params_and_rerun()
+
+    if rename_chat_idx is not None:
+        idx = int(rename_chat_idx)
+        if 0 <= idx < len(st.session_state.chat_history):
+            clean_title = (new_chat_title or "").strip()
+            if clean_title:
+                st.session_state.chat_history[idx]["title"] = clean_title
+                save_history(st.session_state.chat_history, st.session_state.user_id)
+        clear_query_params_and_rerun()
+
+except Exception as e:
+    st.error(f"대화 메뉴 처리 중 오류 발생: {e}")
 
 # ==========================================
 # 3. 프리미엄 CSS 스타일링 (SaaS 룩앤필 & 아이콘 깨짐 완벽 방지)
@@ -256,15 +317,178 @@ with st.sidebar:
     history_container = st.container(height=250, border=True)
     with history_container:
         if st.session_state.chat_history:
-            for i, chat in enumerate(reversed(st.session_state.chat_history)):
-                actual_index = len(st.session_state.chat_history) - 1 - i
+            st.markdown("""
+            <style>
+                .chat-history-card {
+                    position: relative;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 4px;
+                    width: 100%;
+                    margin-bottom: 8px;
+                    border: 1px solid #DEE2E6;
+                    border-radius: 10px;
+                    background: #FFFFFF;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+                    overflow: visible;
+                }
+                .chat-history-card:hover {
+                    background: #F8F9FA;
+                    border-color: #C9D4E2;
+                }
+                .chat-open-form {
+                    flex: 1;
+                    margin: 0;
+                    min-width: 0;
+                }
+                .chat-open-btn {
+                    width: 100%;
+                    border: none;
+                    background: transparent;
+                    text-align: left;
+                    padding: 10px 6px 10px 10px;
+                    font-size: 13px;
+                    font-weight: 650;
+                    color: #222;
+                    cursor: pointer;
+                    font-family: Pretendard, sans-serif;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+                .chat-menu {
+                    position: relative;
+                    flex: 0 0 34px;
+                    padding-right: 5px;
+                }
+                .chat-menu summary {
+                    list-style: none;
+                    cursor: pointer;
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 7px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 20px;
+                    font-weight: 900;
+                    color: #555;
+                    user-select: none;
+                }
+                .chat-menu summary::-webkit-details-marker { display: none; }
+                .chat-menu summary:hover { background: #ECEFF3; }
+                .chat-menu-panel {
+                    position: absolute;
+                    right: 0;
+                    top: 32px;
+                    z-index: 999999;
+                    width: 196px;
+                    padding: 10px;
+                    border: 1px solid #D7DEE8;
+                    border-radius: 10px;
+                    background: white;
+                    box-shadow: 0 8px 20px rgba(0,0,0,0.14);
+                }
+                .chat-menu-label {
+                    font-size: 12px;
+                    font-weight: 800;
+                    color: #555;
+                    margin-bottom: 6px;
+                }
+                .chat-title-input {
+                    box-sizing: border-box;
+                    width: 100%;
+                    padding: 7px 8px;
+                    margin-bottom: 6px;
+                    border: 1px solid #CED4DA;
+                    border-radius: 7px;
+                    font-size: 12px;
+                    font-family: Pretendard, sans-serif;
+                }
+                .chat-menu-btn {
+                    width: 100%;
+                    padding: 7px 8px;
+                    margin: 3px 0;
+                    border: 1px solid #DEE2E6;
+                    border-radius: 7px;
+                    background: #F8F9FA;
+                    color: #222;
+                    font-size: 12px;
+                    font-weight: 700;
+                    cursor: pointer;
+                    text-align: left;
+                    font-family: Pretendard, sans-serif;
+                }
+                .chat-menu-btn:hover { background: #E9ECEF; }
+                .chat-menu-btn.danger {
+                    color: #C92A2A;
+                    border-color: #FFC9C9;
+                    background: #FFF5F5;
+                }
+            </style>
+            """, unsafe_allow_html=True)
+
+            history_items = list(enumerate(st.session_state.chat_history))
+            history_items.sort(
+                key=lambda item: (
+                    item[1].get("pinned", False),
+                    item[1].get("updated_at", item[1].get("created_at", ""))
+                ),
+                reverse=True
+            )
+
+            current_user_safe = html.escape(st.session_state.user_id, quote=True)
+
+            for actual_index, chat in history_items:
                 time_str = chat.get("updated_at", chat.get("created_at", "00-00 00:00"))[5:16]
-                query_summary = chat.get("title", "새 대화")[:12] + ".."
-                
-                if st.button(f"🕒 {time_str} | {query_summary}", key=f"hist_{actual_index}", use_container_width=True):
-                    st.session_state.selected_index = actual_index
-                    st.session_state.current_page = "main"
-                    st.rerun()
+                title = chat.get("title", "새 대화")
+                query_summary = title[:14] + ".." if len(title) > 14 else title
+                pin_mark = "📌 " if chat.get("pinned", False) else ""
+                pin_label = "고정 해제" if chat.get("pinned", False) else "상단 고정"
+
+                title_safe = html.escape(title, quote=True)
+                summary_safe = html.escape(query_summary, quote=True)
+                time_safe = html.escape(time_str, quote=True)
+                pin_label_safe = html.escape(pin_label, quote=True)
+
+                st.markdown(f"""
+                <div class="chat-history-card">
+                    <form class="chat-open-form" method="get" action="">
+                        <input type="hidden" name="_user" value="{current_user_safe}">
+                        <input type="hidden" name="open_chat" value="{actual_index}">
+                        <button class="chat-open-btn" type="submit">
+                            {pin_mark}🕒 {time_safe} | {summary_safe}
+                        </button>
+                    </form>
+
+                    <details class="chat-menu">
+                        <summary>⋯</summary>
+                        <div class="chat-menu-panel">
+                            <div class="chat-menu-label">대화 옵션</div>
+
+                            <form method="get" action="">
+                                <input type="hidden" name="_user" value="{current_user_safe}">
+                                <input type="hidden" name="rename_chat" value="{actual_index}">
+                                <input class="chat-title-input" type="text" name="new_title" value="{title_safe}">
+                                <button class="chat-menu-btn" type="submit">제목 저장</button>
+                            </form>
+
+                            <form method="get" action="">
+                                <input type="hidden" name="_user" value="{current_user_safe}">
+                                <input type="hidden" name="pin_chat" value="{actual_index}">
+                                <button class="chat-menu-btn" type="submit">{pin_label_safe}</button>
+                            </form>
+
+                            <form method="get" action="" onsubmit="return confirm('이 대화 기록을 삭제하시겠습니까?');">
+                                <input type="hidden" name="_user" value="{current_user_safe}">
+                                <input type="hidden" name="delete_chat" value="{actual_index}">
+                                <button class="chat-menu-btn danger" type="submit">삭제</button>
+                            </form>
+                        </div>
+                    </details>
+                </div>
+                """, unsafe_allow_html=True)
         else:
             st.caption("저장된 기록이 없습니다.")
 
