@@ -19,25 +19,8 @@ from storage import load_history, save_history
 
 inject_floating_button()
 
-
-def get_query_param(name):
-    value = st.query_params.get(name, None)
-    if isinstance(value, list):
-        return value[0] if value else None
-    return value
-
-
-def clear_query_params_and_rerun():
-    st.query_params.clear()
-    st.rerun()
-
-
-qp_user = get_query_param("_user")
 if "user_id" not in st.session_state:
-    st.session_state.user_id = qp_user or "guest"
-elif st.session_state.user_id == "guest" and qp_user:
-    st.session_state.user_id = qp_user
-
+    st.session_state.user_id = "guest"
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = load_history(st.session_state.user_id)
 if "dark_mode" not in st.session_state:
@@ -60,51 +43,6 @@ def persist_history():
     save_history(st.session_state.chat_history, st.session_state.user_id)
 
 
-# HTML 대화 메뉴 액션 처리
-try:
-    open_chat_idx = get_query_param("open_chat")
-    pin_chat_idx = get_query_param("pin_chat")
-    delete_chat_idx = get_query_param("delete_chat")
-    rename_chat_idx = get_query_param("rename_chat")
-    new_chat_title = get_query_param("new_title")
-
-    if open_chat_idx is not None:
-        idx = int(open_chat_idx)
-        if 0 <= idx < len(st.session_state.chat_history):
-            st.session_state.selected_index = idx
-            st.session_state.current_page = "main"
-        clear_query_params_and_rerun()
-
-    if pin_chat_idx is not None:
-        idx = int(pin_chat_idx)
-        if 0 <= idx < len(st.session_state.chat_history):
-            st.session_state.chat_history[idx]["pinned"] = not st.session_state.chat_history[idx].get("pinned", False)
-            persist_history()
-        clear_query_params_and_rerun()
-
-    if delete_chat_idx is not None:
-        idx = int(delete_chat_idx)
-        if 0 <= idx < len(st.session_state.chat_history):
-            st.session_state.chat_history.pop(idx)
-            if st.session_state.selected_index == idx:
-                st.session_state.selected_index = None
-            elif st.session_state.selected_index is not None and st.session_state.selected_index > idx:
-                st.session_state.selected_index -= 1
-            persist_history()
-        clear_query_params_and_rerun()
-
-    if rename_chat_idx is not None:
-        idx = int(rename_chat_idx)
-        if 0 <= idx < len(st.session_state.chat_history):
-            title = (new_chat_title or "").strip()
-            if title:
-                st.session_state.chat_history[idx]["title"] = title
-                persist_history()
-        clear_query_params_and_rerun()
-except Exception as e:
-    st.error(f"대화 메뉴 처리 중 오류 발생: {e}")
-
-
 apply_custom_style(st.session_state.dark_mode)
 
 st.markdown("""
@@ -113,55 +51,31 @@ st.markdown("""
 html, body, .stApp, p, h1, h2, h3, h4, h5, h6, label, input, textarea, div, button {
     font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
 }
-div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button {
+div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button,
+div[data-testid="stPopover"] button {
     border-radius: 8px !important;
     font-weight: 600 !important;
 }
-.chat-history-card {
-    position: relative;
-    display: flex;
+.chat-row-shell {
+    margin: 0 0 -2px 0;
+    padding: 0;
+}
+.chat-row-note {
+    font-size: 11px;
+    color: #777;
+    margin: -8px 0 6px 8px;
+}
+/* 대화 이력 줄 안의 버튼들이 하나의 카드처럼 보이도록 보정 */
+div[data-testid="stSidebar"] div[data-testid="stHorizontalBlock"]:has(button[kind="secondary"]) {
+    gap: 0.35rem;
     align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    margin-bottom: 8px;
-    border: 1px solid #DEE2E6;
-    border-radius: 10px;
-    background: #FFFFFF;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    overflow: visible;
+    margin-bottom: 0.25rem;
 }
-.chat-history-card:hover { background: #F8F9FA; border-color: #C9D4E2; }
-.chat-open-form { flex: 1; margin: 0; min-width: 0; }
-.chat-open-btn {
-    width: 100%; border: none; background: transparent; text-align: left;
-    padding: 10px 6px 10px 10px; font-size: 13px; font-weight: 650;
-    color: #222; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+div[data-testid="stSidebar"] div[data-testid="stPopover"] button {
+    min-height: 38px !important;
+    padding: 0.25rem 0.4rem !important;
+    font-size: 18px !important;
 }
-.chat-menu { position: relative; flex: 0 0 34px; padding-right: 5px; }
-.chat-menu summary {
-    list-style: none; cursor: pointer; width: 28px; height: 28px; border-radius: 7px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px; font-weight: 900; color: #555; user-select: none;
-}
-.chat-menu summary::-webkit-details-marker { display: none; }
-.chat-menu summary:hover { background: #ECEFF3; }
-.chat-menu-panel {
-    position: absolute; right: 0; top: 32px; z-index: 999999; width: 196px;
-    padding: 10px; border: 1px solid #D7DEE8; border-radius: 10px;
-    background: white; box-shadow: 0 8px 20px rgba(0,0,0,0.14);
-}
-.chat-menu-label { font-size: 12px; font-weight: 800; color: #555; margin-bottom: 6px; }
-.chat-title-input {
-    box-sizing: border-box; width: 100%; padding: 7px 8px; margin-bottom: 6px;
-    border: 1px solid #CED4DA; border-radius: 7px; font-size: 12px;
-}
-.chat-menu-btn {
-    width: 100%; padding: 7px 8px; margin: 3px 0; border: 1px solid #DEE2E6;
-    border-radius: 7px; background: #F8F9FA; color: #222; font-size: 12px;
-    font-weight: 700; cursor: pointer; text-align: left;
-}
-.chat-menu-btn:hover { background: #E9ECEF; }
-.chat-menu-btn.danger { color: #C92A2A; border-color: #FFC9C9; background: #FFF5F5; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -262,19 +176,71 @@ with st.sidebar:
     with st.container(height=250, border=True):
         if st.session_state.chat_history:
             items = list(enumerate(st.session_state.chat_history))
-            items.sort(key=lambda item: (item[1].get("pinned", False), item[1].get("updated_at", item[1].get("created_at", ""))), reverse=True)
-            user_safe = html.escape(st.session_state.user_id, quote=True)
+            items.sort(
+                key=lambda item: (
+                    item[1].get("pinned", False),
+                    item[1].get("updated_at", item[1].get("created_at", ""))
+                ),
+                reverse=True
+            )
+
             for actual_index, chat in items:
                 time_str = chat.get("updated_at", chat.get("created_at", "00-00 00:00"))[5:16]
                 title = chat.get("title", "새 대화")
-                short_title = title[:14] + ".." if len(title) > 14 else title
+                short_title = title[:13] + ".." if len(title) > 13 else title
                 pin_mark = "📌 " if chat.get("pinned", False) else ""
                 pin_label = "고정 해제" if chat.get("pinned", False) else "상단 고정"
-                time_safe = html.escape(time_str, quote=True)
-                title_safe = html.escape(title, quote=True)
-                short_safe = html.escape(short_title, quote=True)
-                pin_label_safe = html.escape(pin_label, quote=True)
-                st.markdown(f"""<div class="chat-history-card"><form class="chat-open-form" method="get" action=""><input type="hidden" name="_user" value="{user_safe}"><input type="hidden" name="open_chat" value="{actual_index}"><button class="chat-open-btn" type="submit">{pin_mark}🕒 {time_safe} | {short_safe}</button></form><details class="chat-menu"><summary>⋯</summary><div class="chat-menu-panel"><div class="chat-menu-label">대화 옵션</div><form method="get" action=""><input type="hidden" name="_user" value="{user_safe}"><input type="hidden" name="rename_chat" value="{actual_index}"><input class="chat-title-input" type="text" name="new_title" value="{title_safe}"><button class="chat-menu-btn" type="submit">제목 저장</button></form><form method="get" action=""><input type="hidden" name="_user" value="{user_safe}"><input type="hidden" name="pin_chat" value="{actual_index}"><button class="chat-menu-btn" type="submit">{pin_label_safe}</button></form><form method="get" action="" onsubmit="return confirm('이 대화 기록을 삭제하시겠습니까?');"><input type="hidden" name="_user" value="{user_safe}"><input type="hidden" name="delete_chat" value="{actual_index}"><button class="chat-menu-btn danger" type="submit">삭제</button></form></div></details></div>""", unsafe_allow_html=True)
+
+                st.markdown('<div class="chat-row-shell">', unsafe_allow_html=True)
+                row_col, menu_col = st.columns([0.84, 0.16], gap="small")
+
+                with row_col:
+                    if st.button(
+                        f"{pin_mark}🕒 {time_str} | {short_title}",
+                        key=f"hist_{actual_index}",
+                        use_container_width=True
+                    ):
+                        st.session_state.selected_index = actual_index
+                        st.session_state.current_page = "main"
+                        st.rerun()
+
+                with menu_col:
+                    with st.popover("⋯", use_container_width=True):
+                        st.caption("대화 옵션")
+
+                        new_title = st.text_input(
+                            "제목 수정",
+                            value=title,
+                            key=f"rename_input_{actual_index}"
+                        )
+
+                        if st.button("제목 저장", key=f"rename_save_{actual_index}", use_container_width=True):
+                            clean_title = new_title.strip() or "새 대화"
+                            st.session_state.chat_history[actual_index]["title"] = clean_title
+                            persist_history()
+                            st.toast("제목이 수정되었습니다.", icon="✏️")
+                            st.rerun()
+
+                        if st.button(pin_label, key=f"pin_toggle_{actual_index}", use_container_width=True):
+                            st.session_state.chat_history[actual_index]["pinned"] = not chat.get("pinned", False)
+                            persist_history()
+                            st.rerun()
+
+                        st.divider()
+                        confirm_delete = st.checkbox("삭제 확인", key=f"confirm_delete_{actual_index}")
+                        if st.button("삭제", key=f"delete_one_{actual_index}", type="primary", use_container_width=True):
+                            if confirm_delete:
+                                st.session_state.chat_history.pop(actual_index)
+                                if st.session_state.selected_index == actual_index:
+                                    st.session_state.selected_index = None
+                                elif st.session_state.selected_index is not None and st.session_state.selected_index > actual_index:
+                                    st.session_state.selected_index -= 1
+                                persist_history()
+                                st.toast("대화가 삭제되었습니다.", icon="🗑️")
+                                st.rerun()
+                            else:
+                                st.warning("삭제하려면 먼저 삭제 확인을 체크하세요.")
+                st.markdown('</div>', unsafe_allow_html=True)
         else:
             st.caption("저장된 기록이 없습니다.")
 
